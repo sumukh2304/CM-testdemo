@@ -93,29 +93,64 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const login = async (email: string, password: string) => {
     try {
-      console.log('🔐 Starting login for:', email);
-      // Use the working user lookup instead of problematic /login endpoint
-      const response = await fetch(`${BACKEND_URL}/users`);
-      const data = await response.json();
-      const users = data?.users || [];
-      const userData = users.find((u: any) => (u.email || '').toLowerCase() === email.toLowerCase());
-      
-      if (!userData) {
-        throw new Error('User not found');
+      console.log('🔐 Starting login for:', email)
+
+      // 1) Verify credentials first
+      try {
+        // Prefer Cognito verification on web (immediate feedback, no backend dependency)
+        const { signIn: cognitoSignIn } = require('../lib/cognito')
+        await cognitoSignIn(email, password)
+        console.log('✅ Cognito password verified')
+      } catch (e) {
+        // As a fallback (or for environments where Cognito is not available), call backend /login
+        const emsg = (e && (e as any).message) ? (e as any).message : String(e || '')
+        console.warn('Cognito sign-in failed or unavailable, trying backend /login:', emsg)
+        try {
+          await authAPI.login(email, password)
+          console.log('✅ Backend password verified')
+        } catch (e2) {
+          console.error('❌ Password verification failed')
+          throw new Error('Invalid email or password')
+        }
       }
-      
-      console.log('👤 User data found:', userData);
-      
-      // Store auth data with session management
-      sessionManager.setSession(userData, userData.userId);
-      setUser(userData);
-      
-      console.log('💾 Session stored successfully');
+
+      // 2) Fetch user profile to populate session (role, ids, etc.)
+      const response = await fetch(`${BACKEND_URL}/users`)
+      const data = await response.json()
+      const users = data?.users || []
+      const userData = users.find((u: any) => (u.email || '').toLowerCase() === email.toLowerCase())
+
+      if (!userData) {
+        throw new Error('User not found')
+      }
+
+      console.log('👤 User data found:', userData)
+
+      // 2.5) Enforce creator approval BEFORE creating a session
+      try {
+        if ((userData.role || '').toLowerCase() === 'creator') {
+          const { getCreatorApproval } = require('../lib/api')
+          const approval = await getCreatorApproval(userData.userId)
+          const isApproved = (approval?.approved || '').toString().toLowerCase() === 'yes'
+          if (!isApproved) {
+            throw new Error('Creator account not approved yet')
+          }
+        }
+      } catch (e) {
+        // surface a clean message to UI
+        const emsg = (e && (e as any).message) ? (e as any).message : 'Creator account not approved'
+        throw new Error(emsg)
+      }
+
+      // 3) Store auth data with session management
+      sessionManager.setSession(userData, userData.userId)
+      setUser(userData)
+      console.log('💾 Session stored successfully')
     } catch (error) {
-      console.error('❌ Login failed:', error);
-      throw error;
+      console.error('❌ Login failed:', error)
+      throw error
     }
-  };
+  }
 
   const register = async (userData: {
     name: string;

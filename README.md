@@ -1,16 +1,15 @@
 
 A modern streaming platform for cartoons and movies built with React Native and React for web.
 
-## ✨ Features
 
 - **Responsive Layout**: Optimized for all screen sizes
 - **Smooth Animations**: Hover effects and transitions
 - **Professional Typography**: Clear hierarchy and readability
 
 ### 🔐 Authentication
-- **Login/Register**: Beautiful auth pages with form validation
+- **Login/Register**: Beautiful auth pages with form 
 - **Role-based Access**: Viewer and Creator roles
-- **Secure Authentication**: AWS Cognito integration
+- **Secure Authentication**: AWS Cognito integratio
 
 ### 🎬 Content Management
 - **Hero Section**: Featured content with video previews

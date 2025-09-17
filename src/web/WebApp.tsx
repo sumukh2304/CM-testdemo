@@ -50,18 +50,6 @@ export default function WebApp() {
                 <Home />
               </div>
             } />
-            {/* Public About page */}
-            <Route path="/about" element={
-              <div>
-                <About />
-              </div>
-            } />
-            {/* Public Team page */}
-            <Route path="/team" element={
-              <div>
-                <Team />
-              </div>
-            } />
             {/* Protected dashboard */}
             <Route path="/dashboard" element={
               <ProtectedRoute>
@@ -92,6 +80,8 @@ export default function WebApp() {
             <Route path="/verify" element={<Verify />} />
             <Route path="/creator" element={<Creator />} />
             <Route path="/admin" element={<Admin />} />
+            <Route path="/about" element={<About />} />
+            <Route path="/team" element={<Team />} />
             <Route path="*" element={<Navigate to="/" />} />
           </Routes>
         </BrowserRouter>

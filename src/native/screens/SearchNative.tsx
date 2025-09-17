@@ -4,6 +4,7 @@ import { useRoute, useNavigation } from '@react-navigation/native'
 import { contentAPI, Content } from '../../services/api'
 import NavigationNative from '../ui/NavigationNative'
 import ContentRowNative from '../ui/ContentRowNative'
+import FooterNative from '../ui/FooterNative'
 
 export default function SearchNative() {
   const route = useRoute() as any
@@ -63,6 +64,7 @@ export default function SearchNative() {
               onPlay={onPlay}
             />
           </View>
+          <FooterNative />
         </ScrollView>
       )}
     </View>

@@ -48,7 +48,7 @@ export default function RegisterNative({ navigation }: NativeStackScreenProps<an
           <Logo iconSize={40} fontSize={18} />
         </View>
         <Text style={styles.title}>Create Account</Text>
-        <Text style={styles.subtitle}>Join Cartoon Movie today!</Text>
+        <Text style={styles.subtitle}>Join CartoonMovie today!</Text>
 
         <View style={styles.form}>
           <View style={styles.inputGroup}>

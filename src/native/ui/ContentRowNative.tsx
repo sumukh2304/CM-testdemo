@@ -1,5 +1,5 @@
-import React from 'react'
-import { View, Text, FlatList, StyleSheet, TouchableOpacity } from 'react-native'
+import React, { useEffect, useRef, useState } from 'react'
+import { View, Text, FlatList, StyleSheet } from 'react-native'
 import type { Content, StreamingUrl } from '../../services/api'
 import ContentCardNative from './ContentCardNative'
 
@@ -15,22 +15,31 @@ interface Props {
 }
 
 export default function ContentRowNative({ title, items, onPlay, onMoreInfo, onAddToWatchlist, onRemoveFromWatchlist, watchlistItems = [], progressMap = {} }: Props) {
-  const ref = React.useRef<FlatList<Content>>(null)
+  const ref = useRef<FlatList<Content>>(null)
+  const [offset, setOffset] = useState(0)
+  const intervalRef = useRef<NodeJS.Timeout | null>(null)
 
-  const scroll = (delta: number) => {
-    try {
-      ref.current?.scrollToOffset({ offset: Math.max(0, (ref.current as any)?._scrollMetrics?.offset + delta), animated: true })
-    } catch {}
-  }
+  // Gentle auto-slide when idle
+  useEffect(() => {
+    if (!items || items.length <= 1) return
+    if (intervalRef.current) clearInterval(intervalRef.current)
+    intervalRef.current = setInterval(() => {
+      try {
+        const width = 232 // snap interval
+        const maxOffset = Math.max(0, items.length * width - width * 2)
+        const next = offset + width
+        const newOffset = next > maxOffset ? 0 : next
+        ref.current?.scrollToOffset({ offset: newOffset, animated: true })
+        setOffset(newOffset)
+      } catch {}
+    }, 3500)
+    return () => { if (intervalRef.current) clearInterval(intervalRef.current) }
+  }, [items, offset])
 
   return (
     <View style={styles.wrap}>
       <View style={styles.header}>
         <Text style={styles.title}>{title}</Text>
-        <View style={styles.actions}>
-          <TouchableOpacity onPress={() => scroll(-300)} style={styles.chev}><Text style={styles.chevText}>{'<'}</Text></TouchableOpacity>
-          <TouchableOpacity onPress={() => scroll(300)} style={styles.chev}><Text style={styles.chevText}>{'>'}</Text></TouchableOpacity>
-        </View>
       </View>
       <FlatList
         ref={ref}
@@ -49,6 +58,11 @@ export default function ContentRowNative({ title, items, onPlay, onMoreInfo, onA
         )}
         horizontal
         showsHorizontalScrollIndicator={false}
+        contentContainerStyle={{ paddingHorizontal: 12, paddingBottom: 4 }}
+        ItemSeparatorComponent={() => <View style={{ width: 12 }} />}
+        snapToAlignment="start"
+        decelerationRate="fast"
+        snapToInterval={232} // card width (220) + gap (12)
       />
     </View>
   )
@@ -58,7 +72,5 @@ const styles = StyleSheet.create({
   wrap: { paddingVertical: 8 },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 12, marginBottom: 8 },
   title: { color: 'white', fontWeight: '800', fontSize: 16 },
-  actions: { flexDirection: 'row', gap: 8 },
-  chev: { width: 28, height: 28, borderRadius: 14, backgroundColor: '#18181b', borderWidth: 1, borderColor: '#24242a', alignItems: 'center', justifyContent: 'center' },
-  chevText: { color: '#b0b3b8', fontWeight: '700' },
+  
 })

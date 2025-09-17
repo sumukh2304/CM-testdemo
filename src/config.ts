@@ -23,13 +23,19 @@ const getEnvVar = (key: string): string | undefined => {
 
 
 
+// Helper: normalize base URL (remove trailing slashes)
+const normalizeBase = (u?: string) => {
+  if (!u) return ''
+  return u.replace(/\/+$/, '')
+}
+
 // Build configuration from environment variables or hardcoded values
 export const config: Config = {
   BACKEND_URL: (() => {
     const fromEnv = getEnvVar('VITE_BACKEND_URL') || getEnvVar('EXPO_PUBLIC_BACKEND_URL')
-    if (fromEnv) return fromEnv
-    // Fallback for native or unknown envs
-    return 'http://127.0.0.1:8000'
+    if (fromEnv) return normalizeBase(fromEnv)
+    // Fallback for native or unknown envs (no trailing slash)
+    return normalizeBase('https://w3w905927g.execute-api.us-east-1.amazonaws.com/prod')
   })(),
   
   AWS_REGION: getEnvVar('VITE_AWS_REGION') || 

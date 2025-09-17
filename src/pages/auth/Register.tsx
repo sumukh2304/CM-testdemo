@@ -70,7 +70,7 @@ export default function Register() {
         </div>
         
         <h1 className="auth-title">Create Account</h1>
-        <p className="auth-subtitle">Join Cartoon Movie today!</p>
+        <p className="auth-subtitle">Join CartoonMovie today!</p>
         
         <form onSubmit={onSubmit} className="auth-form">
           <div className="auth-input-group">

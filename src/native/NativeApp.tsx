@@ -8,6 +8,8 @@ import DashboardNative from './screens/DashboardNative'
 import PlayerNative from './screens/PlayerNative'
 import RegisterNative from './screens/RegisterNative'
 import SearchNative from './screens/SearchNative'
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context'
+import { StatusBar } from 'expo-status-bar'
 
 const Stack = createNativeStackNavigator()
 
@@ -24,7 +26,14 @@ function NativeShell() {
   }
 
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
+    <Stack.Navigator 
+      screenOptions={{ 
+        headerShown: false,
+        animation: 'slide_from_right',
+        gestureEnabled: true,
+        fullScreenGestureEnabled: true,
+      }}
+    >
       {user ? (
         <>
           <Stack.Screen name="Dashboard" component={DashboardNative} />
@@ -44,9 +53,16 @@ function NativeShell() {
 export default function NativeApp() {
   return (
     <AuthProvider>
-      <NavigationContainer>
-        <NativeShell />
-      </NavigationContainer>
+      <SafeAreaProvider>
+        {/* Global safe area wrapper so content sits below Android status/navigation bars */}
+        <SafeAreaView style={{ flex: 1, backgroundColor: '#000' }} edges={['top','bottom']}> 
+          {/* Visible status bar across the app (player manages hiding when in fullscreen) */}
+          <StatusBar style="light" animated translucent={true} backgroundColor="transparent" />
+          <NavigationContainer>
+            <NativeShell />
+          </NavigationContainer>
+        </SafeAreaView>
+      </SafeAreaProvider>
     </AuthProvider>
   )
 }

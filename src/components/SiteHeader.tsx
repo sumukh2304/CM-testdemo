@@ -63,7 +63,14 @@ export default function SiteHeader({ navigation, mode = 'default' }: SiteHeaderP
             <button onClick={() => handleNavigation('/')} className="header-logo">
               <Logo />
             </button>
-            <nav className="header-nav"></nav>
+            <nav className="header-nav">
+              <button
+                onClick={() => handleNavigation('/')}
+                className="header-nav-item"
+              >
+                Home
+              </button>
+            </nav>
           </div>
           
           <div className="header-right">
@@ -126,58 +133,12 @@ export default function SiteHeader({ navigation, mode = 'default' }: SiteHeaderP
                 )}
               </div>
             ) : (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                <button
-                  onClick={() => handleNavigation('/')}
-                  style={{
-                    color: '#FFFFFF',
-                    padding: '9px 16px',
-                    borderRadius: 9999,
-                    border: '1px solid rgba(255,255,255,0.25)',
-                    background: 'transparent',
-                    fontWeight: 700,
-                    letterSpacing: 0.3,
-                    transition: 'background-color 150ms ease, border-color 150ms ease'
-                  }}
-                  onMouseEnter={(e) => {
-                    (e.currentTarget as HTMLButtonElement).style.backgroundColor = 'rgba(255,255,255,0.08)';
-                    (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(255,255,255,0.35)';
-                  }}
-                  onMouseLeave={(e) => {
-                    (e.currentTarget as HTMLButtonElement).style.backgroundColor = 'transparent';
-                    (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(255,255,255,0.25)';
-                  }}
-                >
-                  Home
-                </button>
-                <button
-                  onClick={() => handleNavigation('/login')}
-                  style={{
-                    background: 'linear-gradient(135deg, #CC5500 0%, #FF7A1A 100%)',
-                    color: '#FFFFFF',
-                    padding: '10px 18px',
-                    borderRadius: 9999,
-                    border: '1px solid rgba(255,255,255,0.15)',
-                    boxShadow: '0 6px 18px rgba(204,85,0,0.35)',
-                    fontWeight: 800,
-                    letterSpacing: 0.3,
-                    transition: 'transform 150ms ease, box-shadow 150ms ease, filter 150ms ease',
-                    WebkitTapHighlightColor: 'transparent'
-                  }}
-                  onMouseEnter={(e) => {
-                    (e.currentTarget as HTMLButtonElement).style.transform = 'translateY(-1px)';
-                    (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 10px 24px rgba(204,85,0,0.45)';
-                    (e.currentTarget as HTMLButtonElement).style.filter = 'brightness(1.03)';
-                  }}
-                  onMouseLeave={(e) => {
-                    (e.currentTarget as HTMLButtonElement).style.transform = 'translateY(0)';
-                    (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 6px 18px rgba(204,85,0,0.35)';
-                    (e.currentTarget as HTMLButtonElement).style.filter = 'none';
-                  }}
-                >
-                  Login
-                </button>
-              </div>
+              <button 
+                onClick={() => handleNavigation('/login')}
+                className="bg-streaming-primary hover:bg-orange-700 text-white px-6 py-2 rounded transition-colors"
+              >
+                Login
+              </button>
             )}
           </div>
         </div>

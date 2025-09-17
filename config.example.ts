@@ -2,7 +2,7 @@
 
 export const config = {
   // Backend API URL
-  BACKEND_URL: 'https://w3w905927g.execute-api.us-east-1.amazonaws.com/prod/',
+  BACKEND_URL: 'http://localhost:8000',
   
   // AWS Cognito Configuration
   AWS_REGION: 'us-east-1',

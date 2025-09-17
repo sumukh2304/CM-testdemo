@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react'
-import { View, Text, ActivityIndicator, ScrollView } from 'react-native'
+import { View, Text, ActivityIndicator, ScrollView, RefreshControl } from 'react-native'
 import { useNavigation } from '@react-navigation/native'
 import { contentAPI, userAPI, Content } from '../../services/api'
 import { useAuth } from '../../hooks/useAuth'
@@ -7,6 +7,7 @@ import NavigationNative from '../ui/NavigationNative'
 import StreamingHeroNative from '../ui/StreamingHeroNative'
 import ContentRowNative from '../ui/ContentRowNative'
 import MovieDetailsModalNative from '../ui/MovieDetailsModalNative'
+import FooterNative from '../ui/FooterNative'
 
 export default function DashboardNative() {
   const navigation = useNavigation() as any
@@ -154,7 +155,19 @@ export default function DashboardNative() {
   return (
     <View style={{ flex: 1, backgroundColor: '#0f0f14' }}>
       <NavigationNative />
-      <ScrollView>
+      <ScrollView
+        refreshControl={
+          <RefreshControl
+            tintColor="#CC5500"
+            colors={["#CC5500"]}
+            refreshing={loading}
+            onRefresh={() => {
+              loadContent()
+              loadUserData()
+            }}
+          />
+        }
+      >
         <StreamingHeroNative
           featuredContent={featured}
           onPlay={onPlay}
@@ -243,6 +256,8 @@ export default function DashboardNative() {
           onRemoveFromWatchlist={onRemoveFromWatchlist}
           inWatchlist={detailsItem ? watchlistItems.includes(detailsItem.contentId) : false}
         />
+        {/* Footer at bottom */}
+        <FooterNative />
       </ScrollView>
     </View>
   )

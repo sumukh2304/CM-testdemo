@@ -24,7 +24,7 @@ export default function LoginNative({ navigation }: NativeStackScreenProps<any>)
     try {
       setLoading(true)
       await login(email, password)
-      navigation.reset({ index: 0, routes: [{ name: 'Dashboard' }] })
+      // Do not navigate manually; NativeShell will switch stacks when auth state updates
     } catch (e: any) {
       setToast({ message: e?.message || 'Login failed', type: 'error' })
     } finally {

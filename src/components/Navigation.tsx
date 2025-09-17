@@ -37,6 +37,7 @@ export default function Navigation({ currentPage = 'home', onNavigate }: Navigat
     const containerRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLInputElement>(null);
 
+    // Fetch suggestions from backend on each query change (debounced via open state)
     useEffect(() => {
       let isMounted = true;
       const q = query.trim();
@@ -54,6 +55,7 @@ export default function Navigation({ currentPage = 'home', onNavigate }: Navigat
       return () => { isMounted = false };
     }, [open, query]);
 
+    // Close on outside click
     useEffect(() => {
       const onDocClick = (e: MouseEvent) => {
         if (!containerRef.current) return;
@@ -66,6 +68,7 @@ export default function Navigation({ currentPage = 'home', onNavigate }: Navigat
       return () => document.removeEventListener('mousedown', onDocClick);
     }, []);
 
+    // Debounced open logic
     useEffect(() => {
       const q = query.trim();
       if (!q) {
@@ -121,22 +124,20 @@ export default function Navigation({ currentPage = 'home', onNavigate }: Navigat
           transition: 'all 0.3s ease'
         }}
       >
-        {/* Logo + minimal links */}
+        {/* Logo */}
         <div
           style={{
             display: 'flex',
             alignItems: 'center',
             cursor: 'pointer',
-            marginRight: 16,
-            gap: 16,
+            marginRight: 16
           }}
+          onClick={() => handleNavigation('home')}
         >
-          <div onClick={() => handleNavigation('dashboard')}>
-            <Logo />
-          </div>
+          <Logo />
         </div>
 
-        {/* Search Bar */}
+        {/* Search Bar with live suggestions */}
         <form onSubmit={submitSearch} style={{ flex: 1, maxWidth: 520, marginRight: 24 }}>
           <div ref={containerRef} style={{ position: 'relative' }}>
             <input
@@ -212,11 +213,13 @@ export default function Navigation({ currentPage = 'home', onNavigate }: Navigat
                         cursor: 'pointer'
                       }}
                     >
+                      {/* Thumbnail */}
                       <div style={{ width: 48, height: 32, backgroundColor: '#222', borderRadius: 4, overflow: 'hidden', flexShrink: 0 }}>
                         {item.thumbnailUrl ? (
                           <img src={item.thumbnailUrl} alt={item.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                         ) : null}
                       </div>
+                      {/* Text */}
                       <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
                         <div style={{ color: 'white', fontWeight: 600, fontSize: 14, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                           {item.title}
@@ -234,8 +237,7 @@ export default function Navigation({ currentPage = 'home', onNavigate }: Navigat
         </form>
 
         {/* User Menu */}
-        <div style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 16 }}>
-
+        <div style={{ position: 'relative' }}>
           <div
             style={{
               display: 'flex',
@@ -245,6 +247,7 @@ export default function Navigation({ currentPage = 'home', onNavigate }: Navigat
             }}
             onClick={() => setShowUserMenu(!showUserMenu)}
           >
+            {/* User Avatar */}
             <div
               style={{
                 width: 36,
@@ -261,6 +264,8 @@ export default function Navigation({ currentPage = 'home', onNavigate }: Navigat
             >
               {user?.name?.charAt(0).toUpperCase() || 'U'}
             </div>
+
+            {/* Dropdown Arrow */}
             <div
               style={{
                 width: 0,
@@ -274,6 +279,7 @@ export default function Navigation({ currentPage = 'home', onNavigate }: Navigat
             />
           </div>
 
+          {/* Dropdown Menu */}
           {showUserMenu && (
             <div
               style={{
@@ -300,6 +306,25 @@ export default function Navigation({ currentPage = 'home', onNavigate }: Navigat
 
               <div style={{ padding: 8 }}>
                 <button
+                  onClick={() => handleNavigation('profile')}
+                  style={{
+                    width: '100%',
+                    padding: '8px 12px',
+                    background: 'none',
+                    border: 'none',
+                    color: '#ccc',
+                    textAlign: 'left',
+                    cursor: 'pointer',
+                    borderRadius: 4,
+                    transition: 'background-color 0.2s ease'
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#333'}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                >
+                  Account Settings
+                </button>
+
+                <button
                   onClick={handleLogout}
                   style={{
                     width: '100%',
@@ -325,5 +350,6 @@ export default function Navigation({ currentPage = 'home', onNavigate }: Navigat
     );
   }
 
+  // Native navigation would go here
   return null;
 }

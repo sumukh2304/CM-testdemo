@@ -150,9 +150,8 @@ export default function About() {
               {
                 title: 'Community',
                 text: 'We are a close-knit group of driven and ambitious people building the best in Generative AI Entertainment.',
-                accent: '#708238',
-                gradient: 'linear-gradient(135deg, rgba(112,130,56,0.1) 0%, rgba(112,130,56,0.05) 100%)'
-                
+                accent: '#CC5500',
+                gradient: 'linear-gradient(135deg, rgba(204,85,0,0.1) 0%, rgba(204,85,0,0.05) 100%)'
               },
             ].map((card, idx) => (
               <div
@@ -253,36 +252,30 @@ export default function About() {
             gap: 60,
             flexWrap: 'wrap'
           }}>
-            <a href="https://images.news18.com/ms/prod/forbesindia/Cartoon_Movie_57d4d6dea0.pdf" target="_blank" rel="noopener noreferrer">
-              <Image
-                source={bannerImage}
-                style={{ 
-                  width: 450,
-                  height: 350,
-                  resizeMode: 'contain'
-                }}
-              />
-            </a>
-            <a href="https://www.nvidia.com/en-in/startups/" target="_blank" rel="noopener noreferrer">
-              <Image
-                source={nvidiaImage}
-                style={{ 
-                  width: 320,
-                  height: 150,
-                  resizeMode: 'contain'
-                }}
-              />
-            </a>
-            <a href="https://www.dnb.com/business-directory/company-profiles.perpetual_pictures_private_limited.8046b2ec01fb9010db136db1669dff50.html" target="_blank" rel="noopener noreferrer">
-              <Image
-                source={dnbImage}
-                style={{ 
-                  width: 320,
-                  height: 150,
-                  resizeMode: 'contain'
-                }}
-              />
-            </a>
+            <Image
+              source={bannerImage}
+              style={{ 
+                maxWidth: 200, 
+                maxHeight: 120, 
+                resizeMode: 'contain'
+              }}
+            />
+            <Image
+              source={nvidiaImage}
+              style={{ 
+                maxWidth: 200, 
+                maxHeight: 120, 
+                resizeMode: 'contain'
+              }}
+            />
+            <Image
+              source={dnbImage}
+              style={{ 
+                maxWidth: 200, 
+                maxHeight: 120, 
+                resizeMode: 'contain'
+              }}
+            />
         </div>
         </section>
 

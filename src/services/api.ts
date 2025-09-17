@@ -1,13 +1,11 @@
 import axios from 'axios';
+import { BACKEND_URL } from '../config';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+const API_BASE_URL = BACKEND_URL;
 
 const api = axios.create({
   baseURL: API_BASE_URL,
   timeout: 20000,
-  headers: {
-    'Content-Type': 'application/json',
-  },
 });
 
 // Request interceptor for auth
@@ -25,8 +23,21 @@ api.interceptors.request.use((config) => {
       url === '/register' ||
       url === '/users' && config.method?.toLowerCase() === 'post';
 
-    if (token && !isPublic) {
-      config.headers.Authorization = `Bearer ${token}`;
+    // Set Content-Type only for non-GET requests to avoid CORS preflight on GET
+    const method = (config.method || 'get').toLowerCase();
+    if (method !== 'get') {
+      config.headers = {
+        ...(config.headers || {}),
+        'Content-Type': 'application/json',
+      } as any;
+    } else if (config.headers && 'Content-Type' in config.headers) {
+      try { delete (config.headers as any)['Content-Type']; } catch {}
+    }
+
+    // Avoid attaching Authorization for GET watchlist/watch-history to prevent CORS preflight on web
+    const noAuthForThisGet = method === 'get' && /\/users\/[^/]+\/(watchlist|watch-history)$/.test(url)
+    if (token && !isPublic && !noAuthForThisGet) {
+      (config.headers as any).Authorization = `Bearer ${token}`;
     }
     return config;
   } catch {

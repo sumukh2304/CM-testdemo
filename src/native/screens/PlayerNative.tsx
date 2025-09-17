@@ -3,8 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet, Platform, BackHandler } from 
 import { useRoute, useNavigation } from '@react-navigation/native'
 import { contentAPI, userAPI } from '../../services/api'
 import { useAuth } from '../../hooks/useAuth'
-import AndroidVideoPlayer from '../AndroidVideoPlayer'
-import IOSVideoPlayer from '../IOSVideoPlayer'
+import UnifiedVideoPlayer from '../../components/UnifiedVideoPlayer'
 
 interface RouteParams {
   contentId: string
@@ -128,40 +127,28 @@ export default function PlayerNative() {
     maybeSaveProgress()
   }
 
-  const ControlButton = ({ label, active, onPress }: { label: string; active?: boolean; onPress: () => void }) => (
-    <TouchableOpacity onPress={onPress} style={[styles.controlBtn, active && styles.controlBtnActive]}>
-      <Text style={[styles.controlBtnText, active && styles.controlBtnTextActive]}>{label}</Text>
-    </TouchableOpacity>
-  )
-
   return (
     <View style={styles.container}>
-      {/* Player */}
-      {Platform.OS === 'android' ? (
-        <AndroidVideoPlayer src={currentUri} autoPlay muted={false} loop={false} onLoad={onLoad} onProgress={onProgress} style={{ flex: 1 }} startPosition={initialSeek} />
-      ) : (
-        <IOSVideoPlayer src={currentUri} autoPlay muted={false} loop={false} onLoad={onLoad} onProgress={onProgress} style={{ flex: 1 }} startPosition={initialSeek} />
-      )}
-
-      {/* Top bar */}
-      <View style={styles.topBar}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-          <Text style={{ color: 'white', fontSize: 16 }}>Back</Text>
-        </TouchableOpacity>
-        <Text numberOfLines={1} style={styles.title}>{title || 'Playing'}</Text>
-        <View style={{ width: 48 }} />
-      </View>
-
-      {/* Bottom controls */}
-      <View style={styles.controls}>
-        <View style={styles.qualityRow}>
-          <ControlButton label="Auto" active={quality === 'auto'} onPress={() => setQuality('auto')} />
-          {QUALITY_LABELS.map(q => (
-            sources[q] ? (
-              <ControlButton key={q} label={q.toUpperCase()} active={quality === q} onPress={() => setQuality(q)} />
-            ) : null
-          ))}
-        </View>
+      {/* Player only; all controls come from UnifiedVideoPlayer to match web */}
+      <View style={{ flex: 1 }}>
+        <UnifiedVideoPlayer
+          src={currentUri}
+          autoPlay
+          muted={false}
+          loop={false}
+          onLoad={onLoad}
+          onProgress={onProgress}
+          initialPosition={initialSeek}
+          qualities={Object.keys(sources).map(label => ({ label, uri: sources[label] }))}
+          currentQuality={quality === 'auto' ? undefined : quality}
+          onSelectQuality={(label) => {
+            const next = sources[label as keyof typeof sources]
+            if (next) {
+              setQuality(label as any)
+              setCurrentUri(next)
+            }
+          }}
+        />
       </View>
     </View>
   )
@@ -169,19 +156,5 @@ export default function PlayerNative() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#000' },
-  topBar: {
-    position: 'absolute', top: 0, left: 0, right: 0, height: 56, paddingHorizontal: 12,
-    backgroundColor: 'rgba(0,0,0,0.4)', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between'
-  },
-  backBtn: { paddingVertical: 8, paddingHorizontal: 12, backgroundColor: 'rgba(0,0,0,0.4)', borderRadius: 8 },
-  title: { color: 'white', fontSize: 16, fontWeight: '600', flex: 1, textAlign: 'center' },
-  controls: {
-    position: 'absolute', left: 0, right: 0, bottom: 0, paddingBottom: 16, paddingTop: 8,
-    backgroundColor: 'rgba(0,0,0,0.45)'
-  },
-  qualityRow: { flexDirection: 'row', justifyContent: 'center', flexWrap: 'wrap', gap: 8 },
-  controlBtn: { borderWidth: 1, borderColor: '#CC5500', paddingVertical: 6, paddingHorizontal: 10, borderRadius: 6, marginHorizontal: 4, marginVertical: 6 },
-  controlBtnActive: { backgroundColor: '#CC5500' },
-  controlBtnText: { color: '#CC5500', fontWeight: '600' },
-  controlBtnTextActive: { color: '#000' }
+  // No extra overlay styles; UnifiedVideoPlayer provides all UI
 })

@@ -172,7 +172,7 @@ body {
   background-color: #e04a00 !important;
 }
 
-.hover\\:bg-orange-700:hover {
+.hover\:bg-orange-700:hover {
   background-color: #e04a00 !important;
 }
 
@@ -613,7 +613,7 @@ body {
 .header-nav-item {
   background: none;
   border: none;
-  color: #CC5500;
+  color: #ffffff;
   font-size: 0.9rem;
   font-weight: 500;
   cursor: pointer;

@@ -14,10 +14,9 @@ export default function SiteFooter() {
         <div style={{ maxWidth: '1200px', margin: '0 auto', display: 'grid', gridTemplateColumns: '1.2fr 1fr 1fr 1fr', gap: '24px', alignItems: 'start' }}>
           {/* Company */}
           <div>
-            <div style={{ color: '#e4e4e7', fontSize: 14, fontWeight: 700, marginBottom: 10 }}>Cartoon Movie</div>
+            <div style={{ color: '#e4e4e7', fontSize: 14, fontWeight: 700, marginBottom: 10 }}>CartoonMovie</div>
             <div style={{ color: '#71717a', fontSize: 13, lineHeight: '20px' }}>
-              © 2025 Perpetual Pictures Private Ltd. <br />
-              All rights reserved.
+              © 2025 Perpetual Pictures Private Ltd. All rights reserved.
             </div>
             <div style={{ marginTop: 10 }}>
               <a href="mailto:contact@cartoon.movie" style={{ color: '#9ca3af', fontSize: 13, textDecoration: 'none' }}>
@@ -41,7 +40,7 @@ export default function SiteFooter() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               <a href="https://x.com/cartoonmovieai" target="_blank" rel="noreferrer" style={{ color: '#9ca3af', fontSize: 13, textDecoration: 'none' }}>X (Twitter)</a>
               <a href="https://www.instagram.com/cartoon.movie" target="_blank" rel="noreferrer" style={{ color: '#9ca3af', fontSize: 13, textDecoration: 'none' }}>Instagram</a>
-              <a href="https://www.linkedin.com/company/cartoonmovie/" target="_blank" rel="noreferrer" style={{ color: '#9ca3af', fontSize: 13, textDecoration: 'none' }}>LinkedIn</a>
+              <a href="https://www.linkedin.com/company/cartoonmovie/posts/?feedView=all" target="_blank" rel="noreferrer" style={{ color: '#9ca3af', fontSize: 13, textDecoration: 'none' }}>LinkedIn</a>
             </div>
           </div>
 

@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage'
-import { Platform, NativeEventEmitter, NativeModules } from 'react-native'
+import { Platform } from 'react-native'
 
 const SESSION_TIMEOUT = 24 * 60 * 60 * 1000 // 24 hours
 const SESSION_TIMESTAMP_KEY = 'cartoonflix_session_timestamp'
@@ -7,7 +7,9 @@ const AUTH_TOKEN_KEY = 'authToken'
 const USER_DATA_KEY = 'user'
 const SESSION_KEY = 'cartoonflix_session'
 
-const emitter = new NativeEventEmitter(NativeModules.DeviceEventManager || {})
+// Note: Avoid using NativeEventEmitter without a proper native module that
+// implements addListener/removeListeners. We keep native session checks simple
+// and provide a no-op activity listener to prevent warnings.
 
 export interface SessionData {
   user: any
@@ -79,8 +81,7 @@ class SessionManagerNative {
 
   public setupActivityListener(): () => void {
     // No-op for now on native; hook into AppState or gestures if needed
-    const sub = emitter.addListener('sessionExpired', () => {})
-    return () => sub.remove()
+    return () => {}
   }
 }
 

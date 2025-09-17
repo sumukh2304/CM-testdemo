@@ -1,19 +1,17 @@
 import React, { useState, useRef, useEffect } from 'react'
-import { View, Text, TouchableOpacity, Animated, Dimensions, Platform, Image } from 'react-native'
+import { View, Text, TouchableOpacity, Animated, Dimensions, Platform, Image, TouchableWithoutFeedback } from 'react-native'
+import { StatusBar } from 'expo-status-bar'
+import * as NavigationBar from 'expo-navigation-bar'
+import * as ScreenOrientation from 'expo-screen-orientation'
 const logoWatermark = require('../../assets/image.png')
+// Use expo-av on native: ExoPlayer (Android) and AVPlayer (iOS) under the hood
 import { Video, ResizeMode } from 'expo-av'
 import { Ionicons } from '@expo/vector-icons'
-import { BACKEND_URL } from '../config'
+// import { BACKEND_URL } from '../config'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
-// Web-only imports (conditionally loaded)
-let shaka: any = null
-if (Platform.OS === 'web') {
-  try {
-    shaka = require('shaka-player/dist/shaka-player.ui.js')
-  } catch (e) {
-    console.warn('Shaka Player not available on this platform')
-  }
-}
+// Note: UnifiedVideoPlayer is strictly for native (iOS/Android) using expo-av.
+// Web should use EnhancedVideoPlayer (Shaka) exclusively.
 
 interface UnifiedVideoPlayerProps {
   src: string
@@ -26,6 +24,10 @@ interface UnifiedVideoPlayerProps {
   onProgress?: (progress: { currentTime: number; duration: number }) => void
   onEnd?: () => void
   initialPosition?: number // Start time in seconds
+  // Optional: native quality selection (web still uses Shaka UI)
+  qualities?: { label: string; uri: string }[]
+  currentQuality?: string
+  onSelectQuality?: (label: string) => void
 }
 
 const UnifiedVideoPlayer: React.FC<UnifiedVideoPlayerProps> = ({
@@ -39,6 +41,9 @@ const UnifiedVideoPlayer: React.FC<UnifiedVideoPlayerProps> = ({
   onProgress,
   onEnd,
   initialPosition = 0,
+  qualities = [],
+  currentQuality,
+  onSelectQuality,
 }) => {
   // Common state
   const [isPlaying, setIsPlaying] = useState(autoPlay)
@@ -49,12 +54,80 @@ const UnifiedVideoPlayer: React.FC<UnifiedVideoPlayerProps> = ({
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [showControls, setShowControls] = useState(true)
+  const [showSpeedMenu, setShowSpeedMenu] = useState(false)
+  const [showQualityMenu, setShowQualityMenu] = useState(false)
+  const SPEEDS = [0.5, 1.0, 1.25, 1.5, 2.0] as const
+  const [speed, setSpeed] = useState<number>(1.0)
+
+  // Tap gesture helpers
+  const lastTapRef = useRef<number>(-10000)
+  const onBackgroundTap = () => {
+    const now = Date.now()
+    // If controls are hidden, first tap should ONLY reveal them
+    if (!showControls) {
+      setShowControls(true)
+      resetControlsTimer()
+      lastTapRef.current = now
+      return
+    }
+
+    // Consider as double-tap only if previous tap was recent
+    const delta = now - lastTapRef.current
+    if (delta > 0 && delta < 250) {
+      // Double-tap center toggles play
+      handleTogglePlay()
+    } else {
+      // Single tap: always show controls and reset timer (do NOT toggle to hidden)
+      setShowControls(true)
+      resetControlsTimer()
+    }
+    lastTapRef.current = now
+  }
+
+  // Auto enter/exit fullscreen based on device rotation (native only)
+  useEffect(() => {
+    if (Platform.OS === 'web') return
+    const subscribe = async () => {
+      try {
+        const sub = ScreenOrientation.addOrientationChangeListener(async ({ orientationInfo }) => {
+          if (isChangingOrientationRef.current) return
+          const o = orientationInfo.orientation
+          const isLandscape = o === ScreenOrientation.Orientation.LANDSCAPE_LEFT || o === ScreenOrientation.Orientation.LANDSCAPE_RIGHT
+          const isPortrait = o === ScreenOrientation.Orientation.PORTRAIT_UP || o === ScreenOrientation.Orientation.PORTRAIT_DOWN
+          try {
+            if (isLandscape && !isFullscreen && videoRef.current) {
+              isChangingOrientationRef.current = true
+              await ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.LANDSCAPE)
+              await videoRef.current.presentFullscreenPlayer()
+              setIsFullscreen(true)
+              isChangingOrientationRef.current = false
+            } else if (isPortrait && isFullscreen && videoRef.current) {
+              isChangingOrientationRef.current = true
+              if (videoRef.current.dismissFullscreenPlayer) await videoRef.current.dismissFullscreenPlayer()
+              await ScreenOrientation.unlockAsync()
+              setIsFullscreen(false)
+              isChangingOrientationRef.current = false
+            }
+          } catch {}
+        })
+        orientationListenerRef.current = sub
+      } catch {}
+    }
+    subscribe()
+    return () => {
+      try { if (orientationListenerRef.current) ScreenOrientation.removeOrientationChangeListener(orientationListenerRef.current) } catch {}
+    }
+  }, [isFullscreen])
+  
 
   // Refs
   const videoRef = useRef<any>(null)
   const playerRef = useRef<any>(null)
   const controlsOpacity = useRef(new Animated.Value(1)).current
   const hideControlsTimeout = useRef<NodeJS.Timeout | null>(null)
+  const orientationListenerRef = useRef<ScreenOrientation.Subscription | null>(null)
+  const isChangingOrientationRef = useRef(false)
+  const insets = useSafeAreaInsets()
 
   // Auto-hide controls
   const resetControlsTimer = () => {
@@ -65,20 +138,29 @@ const UnifiedVideoPlayer: React.FC<UnifiedVideoPlayerProps> = ({
     setShowControls(true)
     Animated.timing(controlsOpacity, {
       toValue: 1,
-      duration: 200,
-      useNativeDriver: Platform.OS !== 'web',
+      duration: 150,
+      useNativeDriver: true,
     }).start()
+    hideControlsTimeout.current = setTimeout(() => {
+      Animated.timing(controlsOpacity, {
+        toValue: 0,
+        duration: 250,
+        useNativeDriver: true,
+      }).start(() => setShowControls(false))
+    }, 4000)
+  }
 
-    if (isPlaying) {
-      hideControlsTimeout.current = setTimeout(() => {
-        setShowControls(false)
-        Animated.timing(controlsOpacity, {
-          toValue: 0,
-          duration: 300,
-          useNativeDriver: Platform.OS !== 'web',
-        }).start()
-      }, 3000)
+  const pauseAutoHide = () => {
+    if (hideControlsTimeout.current) {
+      clearTimeout(hideControlsTimeout.current)
+      hideControlsTimeout.current = null
     }
+    setShowControls(true)
+    Animated.timing(controlsOpacity, {
+      toValue: 1,
+      duration: 150,
+      useNativeDriver: true,
+    }).start()
   }
 
   useEffect(() => {
@@ -118,6 +200,29 @@ const UnifiedVideoPlayer: React.FC<UnifiedVideoPlayerProps> = ({
       videoRef.current.setPositionAsync(time * 1000)
     }
     setCurrentTime(time)
+    resetControlsTimer()
+  }
+
+  // Seek relative helper (e.g., +/- 10 seconds)
+  const seekBy = async (seconds: number) => {
+    try {
+      const wasPlaying = isPlaying
+      const target = Math.max(0, Math.min(duration, currentTime + seconds))
+      if (videoRef.current?.setPositionAsync) {
+        await videoRef.current.setPositionAsync(target * 1000)
+        if (wasPlaying && videoRef.current?.playAsync) {
+          await videoRef.current.playAsync()
+        }
+      } else if (Platform.OS === 'web' && videoRef.current) {
+        videoRef.current.currentTime = target
+        if (wasPlaying) {
+          try { await (videoRef.current as any).play() } catch {}
+        }
+      }
+      setCurrentTime(target)
+    } catch (e) {
+      console.warn('Seek error:', e)
+    }
   }
 
   const handleVolumeChange = (newVolume: number) => {
@@ -132,21 +237,72 @@ const UnifiedVideoPlayer: React.FC<UnifiedVideoPlayerProps> = ({
 
   const toggleFullscreen = async () => {
     if (Platform.OS === 'web') {
-      if (!isFullscreen) {
-        if (videoRef.current?.requestFullscreen) {
-          await videoRef.current.requestFullscreen()
+      try {
+        if (!isFullscreen) {
+          if (videoRef.current?.requestFullscreen) {
+            await videoRef.current.requestFullscreen()
+            setIsFullscreen(true)
+          }
+        } else {
+          if (typeof document !== 'undefined' && (document as any).exitFullscreen) {
+            await (document as any).exitFullscreen()
+            setIsFullscreen(false)
+          }
         }
-      } else {
-        // Exit fullscreen
-        if (document.exitFullscreen) {
-          await document.exitFullscreen()
-        }
+      } catch (error) {
+        console.warn('Fullscreen API error (user gesture required):', error)
+        // Fallback: just update state for UI purposes
+        setIsFullscreen(!isFullscreen)
       }
-    } else if ((Platform.OS === 'ios' || Platform.OS === 'android') && videoRef.current) {
-      // Use expo-av for both iOS and Android
-      await videoRef.current.presentFullscreenPlayer()
+    } else {
+      try {
+        if (!isFullscreen) {
+          // Lock to landscape and enter fullscreen
+          isChangingOrientationRef.current = true
+          await ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.LANDSCAPE)
+          setIsFullscreen(true)
+          try {
+            if (Platform.OS === 'android') {
+              await NavigationBar.setBackgroundColorAsync('transparent')
+              await NavigationBar.setBehaviorAsync('overlay-swipe' as any)
+              await NavigationBar.setVisibilityAsync('hidden')
+            }
+          } catch {}
+          isChangingOrientationRef.current = false
+        } else {
+          // Exit fullscreen and unlock orientation
+          isChangingOrientationRef.current = true
+          await ScreenOrientation.unlockAsync()
+          setIsFullscreen(false)
+          try {
+            if (Platform.OS === 'android') {
+              await NavigationBar.setVisibilityAsync('visible')
+              await NavigationBar.setBehaviorAsync('inset-swipe' as any)
+            }
+          } catch {}
+          isChangingOrientationRef.current = false
+        }
+      } catch (error) {
+        console.warn('Native fullscreen/orientation error:', error)
+      }
     }
-    setIsFullscreen(!isFullscreen)
+  }
+
+  // Playback rate control for native and web
+  const setPlaybackRate = async (rate: number) => {
+    try {
+      if (Platform.OS === 'web') {
+        if (videoRef.current) {
+          videoRef.current.playbackRate = rate
+        }
+      } else if (videoRef.current?.setRateAsync) {
+        await videoRef.current.setRateAsync(rate, true)
+      }
+      setSpeed(rate)
+      resetControlsTimer()
+    } catch (e) {
+      // ignore rate errors
+    }
   }
 
   // Format time helper
@@ -156,139 +312,28 @@ const UnifiedVideoPlayer: React.FC<UnifiedVideoPlayerProps> = ({
     return `${mins}:${secs.toString().padStart(2, '0')}`
   }
 
-  // Web Shaka Player setup
-  useEffect(() => {
-    if (Platform.OS === 'web' && shaka && videoRef.current) {
-      const initPlayer = async () => {
-        try {
-          shaka.polyfill.installAll()
-          if (!shaka.Player.isBrowserSupported()) {
-            throw new Error('Browser not supported')
-          }
-
-          const player = new shaka.Player()
-          playerRef.current = player
-          await player.attach(videoRef.current)
-
-          // Configure for HLS
-          player.configure({
-            streaming: {
-              bufferingGoal: 30,
-              rebufferingGoal: 5,
-              bufferBehind: 30,
-            },
-          })
-
-          // Event listeners
-          player.addEventListener('error', (event: any) => {
-            setError(event.detail?.message || 'Playback error')
-            setLoading(false)
-            onError?.(event.detail)
-          })
-
-          player.addEventListener('loaded', () => {
-            setLoading(false)
-            setDuration(videoRef.current?.duration || 0)
-            
-            // Auto-resume from last position if specified
-            if (initialPosition > 0 && videoRef.current) {
-              console.log('[UnifiedVideoPlayer] Seeking to initial position:', initialPosition)
-              videoRef.current.currentTime = initialPosition
-              setCurrentTime(initialPosition)
-            }
-            
-            onLoad?.()
-          })
-
-          // Load manifest - direct CloudFront URLs should work
-          await player.load(src, 0, 'application/x-mpegURL')
-          
-          if (autoPlay) {
-            videoRef.current?.play()
-          }
-        } catch (err: any) {
-          setError(err.message)
-          setLoading(false)
-          onError?.(err)
-        }
-      }
-
-      initPlayer()
-
-      return () => {
-        playerRef.current?.destroy()
-      }
-    }
-  }, [src, autoPlay])
-
-  // Web video event handlers
-  useEffect(() => {
-    if (Platform.OS === 'web' && videoRef.current) {
-      const video = videoRef.current
-
-      const handleTimeUpdate = () => {
-        const current = video.currentTime
-        setCurrentTime(current)
-        onProgress?.({ currentTime: current, duration: video.duration })
-      }
-
-      const handleDurationChange = () => {
-        setDuration(video.duration)
-      }
-
-      const handlePlay = () => setIsPlaying(true)
-      const handlePause = () => setIsPlaying(false)
-      const handleEnded = () => {
-        setIsPlaying(false)
-        onEnd?.()
-      }
-
-      video.addEventListener('timeupdate', handleTimeUpdate)
-      video.addEventListener('durationchange', handleDurationChange)
-      video.addEventListener('play', handlePlay)
-      video.addEventListener('pause', handlePause)
-      video.addEventListener('ended', handleEnded)
-
-      return () => {
-        video.removeEventListener('timeupdate', handleTimeUpdate)
-        video.removeEventListener('durationchange', handleDurationChange)
-        video.removeEventListener('play', handlePlay)
-        video.removeEventListener('pause', handlePause)
-        video.removeEventListener('ended', handleEnded)
-      }
-    }
-  }, [])
+  // No web playback logic here; web must use EnhancedVideoPlayer (Shaka)
 
   // Render platform-specific video component
   const renderVideoPlayer = () => {
     if (Platform.OS === 'web') {
-      return (
-        <video
-          ref={videoRef}
-          style={{
-            width: '100%',
-            height: '100%',
-            backgroundColor: '#000',
-          }}
-          muted={muted}
-          loop={loop}
-          playsInline
-          onTouchStart={resetControlsTimer}
-          onMouseMove={resetControlsTimer}
-        />
-      )
+      // Guard: do not render any player on web from this component to avoid Shaka conflicts.
+      return null
     } else {
-      // Use expo-av for both iOS and Android
+      // Use expo-av for both iOS and Android (custom controls)
       return (
         <Video
           ref={videoRef}
           source={{ uri: src }}
           style={{ width: '100%', height: '100%' }}
-          resizeMode={ResizeMode.CONTAIN}
+          resizeMode={isFullscreen ? ResizeMode.COVER : ResizeMode.CONTAIN}
           shouldPlay={isPlaying}
           isLooping={loop}
           isMuted={muted}
           volume={volume}
+          useNativeControls={false}
+          // We manage fullscreen ourselves on native; no-op handler
+          onFullscreenUpdate={undefined as any}
           onLoad={(status: any) => {
             setDuration(status.durationMillis ? status.durationMillis / 1000 : 0)
             setLoading(false)
@@ -317,7 +362,7 @@ const UnifiedVideoPlayer: React.FC<UnifiedVideoPlayerProps> = ({
               }
             }
           }}
-          onError={(error) => {
+          onError={(error: any) => {
             setError('Video load error')
             setLoading(false)
             onError?.(error)
@@ -329,6 +374,7 @@ const UnifiedVideoPlayer: React.FC<UnifiedVideoPlayerProps> = ({
 
   return (
     <View style={{ flex: 1, backgroundColor: '#000', position: 'relative' }}>
+      <StatusBar hidden={isFullscreen} style="light" />
       {/* Video Player */}
       {renderVideoPlayer()}
 
@@ -369,6 +415,7 @@ const UnifiedVideoPlayer: React.FC<UnifiedVideoPlayerProps> = ({
       {/* Streaming platform Controls Overlay */}
       {!loading && !error && (
         <Animated.View
+          pointerEvents={'auto'}
           style={{
             position: 'absolute',
             top: 0,
@@ -376,71 +423,104 @@ const UnifiedVideoPlayer: React.FC<UnifiedVideoPlayerProps> = ({
             right: 0,
             bottom: 0,
             opacity: controlsOpacity,
+            zIndex: showSpeedMenu || showQualityMenu ? 1000 : 10,
           }}
-          onTouchStart={resetControlsTimer}
         >
-          {/* Top gradient with title */}
+          {/* Full-screen tap catcher for toggling controls / double-tap center for play/pause */}
+          <TouchableWithoutFeedback onPress={onBackgroundTap}>
+            <View pointerEvents="auto" style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} />
+          </TouchableWithoutFeedback>
+          {/* Top scrim with title (match web) */}
           <View style={{
             position: 'absolute',
             top: 0,
             left: 0,
             right: 0,
-            height: 80,
-            backgroundColor: 'transparent',
-            paddingTop: 16,
+            height: 90,
+            backgroundColor: 'rgba(0,0,0,0.35)',
+            paddingTop: isFullscreen ? 16 : Math.max(16, insets.top),
             paddingHorizontal: 16,
+            zIndex: 10,
           }}>
             {title && (
-              <Text style={{ color: 'white', fontSize: 18, fontWeight: '600' }}>
+              <Text style={{ color: 'white', fontSize: 20, fontWeight: '700' }}>
                 {title}
               </Text>
             )}
           </View>
 
-          {/* Center play button */}
-          {!isPlaying && (
-            <View style={{
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              justifyContent: 'center',
-              alignItems: 'center',
-            }}>
-              <TouchableOpacity
-                onPress={handleTogglePlay}
-                style={{
-                  width: 80,
-                  height: 80,
-                  borderRadius: 40,
-                  backgroundColor: 'rgba(255,255,255,0.2)',
-                  justifyContent: 'center',
-                  alignItems: 'center',
-                  borderWidth: 2,
-                  borderColor: 'rgba(255,255,255,0.3)',
-                }}
-              >
-                <Ionicons name="play" size={32} color="white" style={{ marginLeft: 4 }} />
+          {/* Center controls: back10 / play-pause / fwd10 with circular backgrounds and small '10' labels */}
+          <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, justifyContent: 'center', alignItems: 'center', zIndex: 10 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <View style={{ alignItems: 'center', marginRight: 24 }}>
+                <TouchableOpacity onPress={() => seekBy(-10)} style={{ width: 64, height: 64, borderRadius: 32, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', alignItems: 'center' }}>
+                  <Ionicons name="play-back" size={28} color="white" />
+                </TouchableOpacity>
+                <Text style={{ color: 'white', fontSize: 10, marginTop: 6 }}>10</Text>
+              </View>
+
+              <TouchableOpacity onPress={handleTogglePlay} style={{ width: 80, height: 80, borderRadius: 40, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', alignItems: 'center', marginHorizontal: 4 }}>
+                <Ionicons name={isPlaying ? 'pause' : 'play'} size={34} color="white" />
               </TouchableOpacity>
+
+              <View style={{ alignItems: 'center', marginLeft: 24 }}>
+                <TouchableOpacity onPress={() => seekBy(10)} style={{ width: 64, height: 64, borderRadius: 32, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', alignItems: 'center' }}>
+                  <Ionicons name="play-forward" size={28} color="white" />
+                </TouchableOpacity>
+                <Text style={{ color: 'white', fontSize: 10, marginTop: 6 }}>10</Text>
+              </View>
             </View>
+          </View>
+
+          {/* Left/Right double-tap seek zones (native only) */}
+          {Platform.OS !== 'web' && (
+            <>
+              <TouchableOpacity
+                activeOpacity={0.7}
+                onPress={() => { seekBy(-10) }}
+                style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: '35%' }}
+              />
+              <TouchableOpacity
+                activeOpacity={0.7}
+                onPress={() => { seekBy(10) }}
+                style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: '35%' }}
+              />
+            </>
           )}
 
-          {/* Bottom controls */}
+          {/* Bottom scrim controls (match web bottom bar) */}
           <View style={{
             position: 'absolute',
             bottom: 0,
             left: 0,
             right: 0,
-            backgroundColor: 'transparent',
-            paddingBottom: 20,
+            backgroundColor: 'rgba(0,0,0,0.35)',
+            paddingBottom: 24,
             paddingHorizontal: 16,
-            paddingTop: 40,
+            paddingTop: 28,
+            zIndex: 10,
           }}>
             {/* Progress bar */}
-            <View style={{ marginBottom: 16 }}>
+            <View style={{ marginBottom: 16 }}
+              onStartShouldSetResponder={() => true}
+              onResponderGrant={(e: any) => {
+                if (!duration) return
+                const x = e.nativeEvent.locationX
+                const width = e.nativeEvent.target && e.nativeEvent.target.width ? e.nativeEvent.target.width : undefined
+                const w = width || Dimensions.get('window').width - 32
+                const ratio = Math.max(0, Math.min(1, x / w))
+                handleSeek(ratio * duration)
+              }}
+              onResponderMove={(e: any) => {
+                if (!duration) return
+                const x = e.nativeEvent.locationX
+                const w = Dimensions.get('window').width - 32
+                const ratio = Math.max(0, Math.min(1, x / w))
+                handleSeek(ratio * duration)
+              }}
+            >
               <View style={{
-                height: 4,
+                height: 6,
                 backgroundColor: 'rgba(255,255,255,0.3)',
                 borderRadius: 2,
                 overflow: 'hidden',
@@ -453,41 +533,57 @@ const UnifiedVideoPlayer: React.FC<UnifiedVideoPlayerProps> = ({
               </View>
             </View>
 
-            {/* Control buttons */}
-            <View style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-            }}>
+            {/* Bottom row: left (volume + time), right (speed + settings + fullscreen) */}
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+              {/* Left cluster */}
               <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                <TouchableOpacity onPress={handleTogglePlay} style={{ marginRight: 20 }}>
-                  <Ionicons 
-                    name={isPlaying ? "pause" : "play"} 
-                    size={24} 
-                    color="white" 
-                  />
+                <TouchableOpacity onPress={() => handleVolumeChange(volume > 0 ? 0 : 1)} style={{ marginRight: 16 }}>
+                  <Ionicons name={volume > 0 ? 'volume-high' : 'volume-mute'} size={22} color='white' />
                 </TouchableOpacity>
-                
-                <Text style={{ color: 'white', fontSize: 14 }}>
+                <Text style={{ color: 'white', fontSize: 13 }}>
                   {formatTime(currentTime)} / {formatTime(duration)}
                 </Text>
               </View>
 
+              {/* Right cluster */}
               <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                <TouchableOpacity onPress={() => handleVolumeChange(volume > 0 ? 0 : 1)} style={{ marginRight: 20 }}>
-                  <Ionicons 
-                    name={volume > 0 ? "volume-high" : "volume-mute"} 
-                    size={24} 
-                    color="white" 
-                  />
-                </TouchableOpacity>
-                
+                {/* Speed */}
+                <View style={{ position: 'relative', marginRight: 18 }}>
+                  <TouchableOpacity onPress={() => { pauseAutoHide(); setShowSpeedMenu(v => !v); setShowQualityMenu(false) }}>
+                    <Text style={{ color: 'white', fontWeight: '800' }}>{speed}x</Text>
+                  </TouchableOpacity>
+                  {showSpeedMenu && (
+                    <View pointerEvents="auto" style={{ position: 'absolute', right: 0, bottom: 28, backgroundColor: 'rgba(0,0,0,0.95)', borderRadius: 10, paddingVertical: 8, paddingHorizontal: 10, zIndex: 2000, elevation: 16, minWidth: 120 }}>
+                      {SPEEDS.map(s => (
+                        <TouchableOpacity key={s} onPress={() => { setShowSpeedMenu(false); setPlaybackRate(s); resetControlsTimer() }} style={{ paddingVertical: 8, paddingHorizontal: 6 }}>
+                          <Text style={{ color: s === speed ? '#FF8C3A' : 'white', fontWeight: s === speed ? '900' : '700' }}>{s}x</Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                  )}
+                </View>
+
+                {/* Settings/Quality */}
+                {Platform.OS !== 'web' && (qualities?.length ? (
+                  <View style={{ position: 'relative', marginRight: 18 }}>
+                    <TouchableOpacity onPress={() => { pauseAutoHide(); setShowQualityMenu(v => !v); setShowSpeedMenu(false) }}>
+                      <Ionicons name='settings-sharp' size={20} color='white' />
+                    </TouchableOpacity>
+                    {showQualityMenu && (
+                      <View pointerEvents="auto" style={{ position: 'absolute', right: 0, bottom: 28, backgroundColor: 'rgba(0,0,0,0.95)', borderRadius: 10, paddingVertical: 8, paddingHorizontal: 10, zIndex: 2000, elevation: 16, minWidth: 140 }}>
+                        {qualities.map(q => (
+                          <TouchableOpacity key={q.label} onPress={() => { setShowQualityMenu(false); onSelectQuality?.(q.label); resetControlsTimer() }} style={{ paddingVertical: 8, paddingHorizontal: 6 }}>
+                            <Text style={{ color: q.label === (currentQuality || '') ? '#FF8C3A' : 'white', fontWeight: q.label === (currentQuality || '') ? '900' : '700' }}>{q.label}</Text>
+                          </TouchableOpacity>
+                        ))}
+                      </View>
+                    )}
+                  </View>
+                ) : null)}
+
+                {/* Fullscreen */}
                 <TouchableOpacity onPress={toggleFullscreen}>
-                  <Ionicons 
-                    name={isFullscreen ? "contract" : "expand"} 
-                    size={24} 
-                    color="white" 
-                  />
+                  <Ionicons name={isFullscreen ? 'contract' : 'expand'} size={22} color='white' />
                 </TouchableOpacity>
               </View>
             </View>

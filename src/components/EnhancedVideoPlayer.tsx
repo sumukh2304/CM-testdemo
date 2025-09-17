@@ -9,7 +9,8 @@ import { BACKEND_URL } from '../config'
 let shaka: any = null
 if (Platform.OS === 'web') {
   try {
-    shaka = require('shaka-player/dist/shaka-player.ui.js')
+    // Use core Shaka build (no default UI) to keep our controls consistent
+    shaka = require('shaka-player/dist/shaka-player.compiled.js')
   } catch (e) {
     console.warn('Shaka Player not available')
   }
@@ -68,6 +69,7 @@ const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
   // Refs
   const videoRef = useRef<any>(null)
   const playerRef = useRef<any>(null)
+  const containerRef = useRef<HTMLDivElement | null>(null)
   const controlsOpacity = useRef(new Animated.Value(1)).current
   const hideControlsTimeout = useRef<NodeJS.Timeout | null>(null)
   const progressBarRef = useRef<any>(null)
@@ -257,8 +259,9 @@ const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
     if (Platform.OS === 'web') {
       try {
         if (!isFullscreen) {
-          if (videoRef.current?.requestFullscreen) {
-            await videoRef.current.requestFullscreen()
+          const el: any = containerRef.current || videoRef.current
+          if (el?.requestFullscreen) {
+            await el.requestFullscreen()
             setIsFullscreen(true)
           }
         } else {
@@ -337,6 +340,34 @@ const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
             }
           })
 
+          // Force stage-aware proxy URLs on web: rewrite any /proxy/hls requests
+          try {
+            const net = player.getNetworkingEngine()
+            if (net && typeof net.registerRequestFilter === 'function') {
+              net.registerRequestFilter((type: any, request: any) => {
+                if (!request?.uris || !Array.isArray(request.uris)) return
+                request.uris = request.uris.map((u: string) => {
+                  try {
+                    // If URL contains '/proxy/hls', ensure it is prefixed with BACKEND_URL (which includes stage)
+                    if (u.includes('/proxy/hls')) {
+                      // Case 1: absolute API GW URL missing stage e.g. https://...amazonaws.com/proxy/hls?url=...
+                      if (/amazonaws\.com\/proxy\/hls/.test(u)) {
+                        const idx = u.indexOf('/proxy/hls')
+                        const suffix = idx >= 0 ? u.substring(idx) : '/proxy/hls'
+                        return `${BACKEND_URL}${suffix}`
+                      }
+                      // Case 2: root-relative '/proxy/hls?...'
+                      if (u.startsWith('/proxy/hls')) {
+                        return `${BACKEND_URL}${u}`
+                      }
+                    }
+                  } catch {}
+                  return u
+                })
+              })
+            }
+          } catch {}
+
           // Event listeners
           player.addEventListener('error', (event: any) => {
             console.error('Shaka Player Error:', event.detail)
@@ -389,6 +420,19 @@ const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
     }
   }, [src])
 
+  // Keep isFullscreen in sync with browser UI (e.g., ESC to exit)
+  useEffect(() => {
+    if (Platform.OS !== 'web') return
+    const handler = () => {
+      const fsActive = !!document.fullscreenElement
+      setIsFullscreen(fsActive)
+    }
+    document.addEventListener('fullscreenchange', handler)
+    return () => {
+      document.removeEventListener('fullscreenchange', handler)
+    }
+  }, [])
+
   // Web video event handlers
   useEffect(() => {
     if (Platform.OS === 'web' && videoRef.current) {
@@ -438,29 +482,33 @@ const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
   const renderVideoPlayer = () => {
     if (Platform.OS === 'web') {
       return (
-        <video
-          ref={videoRef}
-          style={{
-            width: '100%',
-            height: '100%',
-            backgroundColor: '#000',
-          }}
-          muted={muted}
-          playsInline
-          onTouchStart={() => {
-            // Show controls on tap
-            resetControlsTimer()
-          }}
-          onMouseMove={() => {
-            // Show controls on mouse activity
-            resetControlsTimer()
-          }}
-          onClick={() => {
-            // Toggle controls visibility quickly
-            setShowControls(true)
-            resetControlsTimer()
-          }}
-        />
+        <>
+          {/* Hide native browser controls to keep our custom UI consistent */}
+          <style>{`
+            video::-webkit-media-controls { display: none !important; }
+            video::-webkit-media-controls-enclosure { display: none !important; }
+            video::-moz-media-controls { display: none !important; }
+          `}</style>
+          <video
+            ref={videoRef}
+            style={{
+              width: '100%',
+              height: '100%',
+              backgroundColor: '#000',
+              objectFit: 'cover' as any,
+              display: 'block',
+              pointerEvents: 'none' as any,
+            }}
+            controls={false as any}
+            controlsList="nodownload noplaybackrate noremoteplayback nofullscreen"
+            disablePictureInPicture
+            muted={muted}
+            playsInline
+            onTouchStart={() => { resetControlsTimer() }}
+            onMouseMove={() => { resetControlsTimer() }}
+            onClick={() => { setShowControls(true); resetControlsTimer() }}
+          />
+        </>
       )
     } else {
       return (
@@ -556,7 +604,8 @@ const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
         styles.controlsOverlay, 
         { 
           opacity: controlsOpacity,
-          pointerEvents: showControls ? 'auto' : 'none'
+          pointerEvents: showControls ? 'auto' : 'none',
+          zIndex: 5,
         }
       ]}
     >
@@ -688,6 +737,68 @@ const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
     </Animated.View>
   )
 
+  // Wrap the entire player in a web-only container so fullscreen includes the overlays
+  if (Platform.OS === 'web') {
+    return (
+      <div
+        ref={containerRef}
+        data-evp-root
+        style={{ width: '100%', height: '100%', position: 'relative', backgroundColor: '#000', display: 'flex', flexDirection: 'column' }}
+        onMouseMove={() => resetControlsTimer()}
+        onClick={() => { setShowControls(true); resetControlsTimer() }}
+        onTouchStart={() => resetControlsTimer()}
+      >
+        <style>{`
+          /* Ensure fullscreen element truly fills the screen and removes any gaps */
+          div[data-evp-root]:fullscreen { width: 100vw !important; height: 100vh !important; margin: 0 !important; padding: 0 !important; display: flex; }
+          div[data-evp-root]:-webkit-full-screen { width: 100vw !important; height: 100vh !important; margin: 0 !important; padding: 0 !important; display: flex; }
+          div[data-evp-root]:fullscreen video, div[data-evp-root]:-webkit-full-screen video { width: 100vw !important; height: 100vh !important; object-fit: cover !important; }
+        `}</style>
+        <View style={styles.container}>
+          {/* Video Player */}
+          {renderVideoPlayer()}
+
+          {/* Loading Overlay */}
+          {loading && (
+            <View style={styles.loadingOverlay}>
+              <View style={styles.spinner} />
+              <Text style={styles.loadingText}>Loading...</Text>
+            </View>
+          )}
+
+          {/* Buffering Overlay */}
+          {buffering && !loading && (
+            <View style={styles.bufferingOverlay}>
+              <View style={styles.spinner} />
+            </View>
+          )}
+
+          {/* Error Overlay */}
+          {error && (
+            <View style={styles.errorOverlay}>
+              <Ionicons name="alert-circle" size={60} color="#e50914" />
+              <Text style={styles.errorTitle}>Playback Error</Text>
+              <Text style={styles.errorText}>{error}</Text>
+              <TouchableOpacity style={styles.retryButton} onPress={() => { setError(null); setLoading(true) }}>
+                <Text style={styles.retryButtonText}>Retry</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+
+          {/* Controls */}
+          {!error && renderControls()}
+
+          {/* Watermark */}
+          {!error && (
+            <View style={{ position: 'absolute', top: 12, right: 12, opacity: 0.6, zIndex: 50, pointerEvents: 'none', backgroundColor: 'transparent' }}>
+              <Image source={logoWatermark} style={{ width: 120, height: 48 }} resizeMode={'contain'} />
+            </View>
+          )}
+        </View>
+      </div>
+    )
+  }
+
   return (
     <View style={styles.container}>
       {/* Video Player */}
@@ -743,7 +854,7 @@ const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
             backgroundColor: 'transparent'
           }}
         >
-          <Image source={logoWatermark} style={{ width: 120, height: 48, resizeMode: 'contain' }} />
+          <Image source={logoWatermark} style={{ width: 120, height: 48 }} resizeMode={'contain'} />
         </View>
       )}
     </View>

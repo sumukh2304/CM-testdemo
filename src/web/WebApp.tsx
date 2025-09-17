@@ -1,5 +1,5 @@
-import React from 'react'
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import React, { useEffect } from 'react'
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { AuthProvider, useAuth } from '../hooks/useAuth'
 import '../styles.css'
 import Home from '../pages/Home'
@@ -16,6 +16,18 @@ import About from '../pages/static/About'
 import Team from '../pages/static/Team'
 
 export default function WebApp() {
+  function ScrollToTop() {
+    const location = useLocation()
+    useEffect(() => {
+      const root = document.getElementById('app-scroll-root')
+      if (root) {
+        root.scrollTo({ top: 0, left: 0, behavior: 'auto' })
+      } else {
+        window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
+      }
+    }, [location.pathname])
+    return null
+  }
   // Local ProtectedRoute for WebApp
   function ProtectedRoute({ children }: { children: React.ReactNode }) {
     const { user, loading } = useAuth()
@@ -41,8 +53,9 @@ export default function WebApp() {
 
   return (
     <AuthProvider>
-      <div className="min-h-screen w-full" style={{ overflowY: 'auto', overflowX: 'hidden' }}>
+      <div id="app-scroll-root" className="min-h-screen w-full" style={{ height: '100vh', overflowY: 'auto', overflowX: 'hidden' }}>
         <BrowserRouter>
+          <ScrollToTop />
           <Routes>
             {/* Public landing page */}
             <Route path="/" element={

@@ -34,8 +34,8 @@ api.interceptors.request.use((config) => {
       try { delete (config.headers as any)['Content-Type']; } catch {}
     }
 
-    // Avoid attaching Authorization for GET watchlist/watch-history to prevent CORS preflight on web
-    const noAuthForThisGet = method === 'get' && /\/users\/[^/]+\/(watchlist|watch-history)$/.test(url)
+    // Avoid attaching Authorization for GET watchlist/watch-history/recommendations to prevent CORS preflight on web
+    const noAuthForThisGet = method === 'get' && /\/users\/[^/]+\/(watchlist|watch-history|recommendations)$/.test(url)
     if (token && !isPublic && !noAuthForThisGet) {
       (config.headers as any).Authorization = `Bearer ${token}`;
     }

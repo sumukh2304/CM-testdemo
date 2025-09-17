@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useEffect } from 'react'
 import { Image } from 'react-native'
 import SiteHeader from '../../components/SiteHeader'
 import SiteFooter from '../../components/SiteFooter'
@@ -7,6 +7,11 @@ const shekarImage = require('../../../assets/shekar.png')
 const sujanaImage = require('../../../assets/sujana.png')
 
 export default function Team() {
+  useEffect(() => {
+    // Scroll to top when component mounts
+    window.scrollTo(0, 0)
+  }, [])
+
   return (
     <div style={{ backgroundColor: '#000', color: '#fff', minHeight: '100vh' }}>
       <SiteHeader />
@@ -15,7 +20,8 @@ export default function Team() {
       <section
         style={{
           position: 'relative',
-          padding: '110px 0 70px',
+          padding: '30px 0 30px',
+          marginTop: '80px',
           overflow: 'hidden',
           textAlign: 'center',
         }}

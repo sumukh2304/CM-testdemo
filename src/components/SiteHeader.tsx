@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { View, Text, TouchableOpacity, StyleSheet, Platform } from 'react-native'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import Logo from './Logo'
 
@@ -11,6 +11,7 @@ interface SiteHeaderProps {
 
 export default function SiteHeader({ navigation, mode = 'default' }: SiteHeaderProps) {
   const navigate = useNavigate()
+  const location = useLocation()
   const { user, logout } = useAuth()
   const [isScrolled, setIsScrolled] = useState(false)
   const [showProfileDropdown, setShowProfileDropdown] = useState(false)
@@ -19,23 +20,43 @@ export default function SiteHeader({ navigation, mode = 'default' }: SiteHeaderP
   useEffect(() => {
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 50)
+      // Close dropdown on scroll interactions
+      setShowProfileDropdown(false)
     }
 
-    const handleClickOutside = (event: MouseEvent) => {
-      if (profileRef.current && !profileRef.current.contains(event.target as Node)) {
+    const handleGlobalPointer = (event: Event) => {
+      const target = event.target as Node | null
+      if (!profileRef.current) return
+      if (!target || !profileRef.current.contains(target)) {
         setShowProfileDropdown(false)
       }
     }
 
+    const handleKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setShowProfileDropdown(false)
+    }
+
     if (Platform.OS === 'web') {
-      window.addEventListener('scroll', handleScroll)
-      document.addEventListener('mousedown', handleClickOutside)
+      window.addEventListener('scroll', handleScroll, { passive: true })
+      // Use multiple events for reliability across browsers/devices
+      document.addEventListener('mousedown', handleGlobalPointer, true)
+      document.addEventListener('touchstart', handleGlobalPointer, true)
+      document.addEventListener('click', handleGlobalPointer, true)
+      document.addEventListener('keydown', handleKey)
       return () => {
         window.removeEventListener('scroll', handleScroll)
-        document.removeEventListener('mousedown', handleClickOutside)
+        document.removeEventListener('mousedown', handleGlobalPointer, true)
+        document.removeEventListener('touchstart', handleGlobalPointer, true)
+        document.removeEventListener('click', handleGlobalPointer, true)
+        document.removeEventListener('keydown', handleKey)
       }
     }
   }, [])
+
+  // Close the dropdown on route changes
+  useEffect(() => {
+    setShowProfileDropdown(false)
+  }, [location.pathname])
 
   const handleLogout = () => {
     logout()
@@ -56,6 +77,7 @@ export default function SiteHeader({ navigation, mode = 'default' }: SiteHeaderP
 
   // Web version
   if (Platform.OS === 'web') {
+    const hideHome = location.pathname === '/about' || location.pathname === '/team'
     return (
       <header className={`site-header ${isScrolled ? 'scrolled' : ''}`}>
         <div className="header-content">
@@ -64,12 +86,14 @@ export default function SiteHeader({ navigation, mode = 'default' }: SiteHeaderP
               <Logo />
             </button>
             <nav className="header-nav">
-              <button
-                onClick={() => handleNavigation('/')}
-                className="header-nav-item"
-              >
-                Home
-              </button>
+              {!hideHome && (
+                <button
+                  onClick={() => handleNavigation('/')}
+                  className="header-nav-item"
+                >
+                  Home
+                </button>
+              )}
             </nav>
           </div>
           

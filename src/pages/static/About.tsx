@@ -12,6 +12,9 @@ const dnbImage = require('../../../assets/DnB.png')
 export default function About() {
   const rootRef = useRef<HTMLDivElement>(null)
   useEffect(() => {
+    // Scroll to top when component mounts
+    window.scrollTo(0, 0)
+    
     const el = rootRef.current
     if (!el) return
     el.style.opacity = '0'
@@ -31,7 +34,8 @@ export default function About() {
       <section
         style={{
         position: 'relative',
-          padding: '140px 0 120px',
+          padding: '40px 0 40px',
+          marginTop: '80px',
           overflow: 'hidden',
           textAlign: 'left',
         }}
@@ -150,8 +154,8 @@ export default function About() {
               {
                 title: 'Community',
                 text: 'We are a close-knit group of driven and ambitious people building the best in Generative AI Entertainment.',
-                accent: '#CC5500',
-                gradient: 'linear-gradient(135deg, rgba(204,85,0,0.1) 0%, rgba(204,85,0,0.05) 100%)'
+                accent: '#708238',
+                gradient: 'linear-gradient(135deg, rgba(112,130,56,0.1) 0%, rgba(112,130,56,0.05) 100%)'
               },
             ].map((card, idx) => (
               <div
@@ -249,33 +253,42 @@ export default function About() {
             display: 'flex',
             justifyContent: 'center',
             alignItems: 'center',
-            gap: 60,
+            gap: 40,
             flexWrap: 'wrap'
           }}>
-            <Image
-              source={bannerImage}
-              style={{ 
-                maxWidth: 200, 
-                maxHeight: 120, 
-                resizeMode: 'contain'
-              }}
-            />
-            <Image
-              source={nvidiaImage}
-              style={{ 
-                maxWidth: 200, 
-                maxHeight: 120, 
-                resizeMode: 'contain'
-              }}
-            />
-            <Image
-              source={dnbImage}
-              style={{ 
-                maxWidth: 200, 
-                maxHeight: 120, 
-                resizeMode: 'contain'
-              }}
-            />
+            <a href="https://images.news18.com/ms/prod/forbesindia/Cartoon_Movie_57d4d6dea0.pdf" target="_blank" rel="noopener noreferrer" style={{ display: 'inline-block' }}>
+              <Image
+                source={bannerImage}
+                accessibilityLabel="Forbes India feature PDF"
+                style={{ 
+                  width: 350, 
+                  height: 220, 
+                  resizeMode: 'contain'
+                }}
+              />
+            </a>
+            <a href="https://www.nvidia.com/en-in/startups/" target="_blank" rel="noopener noreferrer" style={{ display: 'inline-block' }}>
+              <Image
+                source={nvidiaImage}
+                accessibilityLabel="NVIDIA Inception Startups"
+                style={{ 
+                  width: 250, 
+                  height: 120, 
+                  resizeMode: 'contain'
+                }}
+              />
+            </a>
+            <a href="https://www.dnb.com/business-directory/company-profiles.perpetual_pictures_private_limited.8046b2ec01fb9010db136db1669dff50.html" target="_blank" rel="noopener noreferrer" style={{ display: 'flex', flexBasis: '100%', justifyContent: 'center', alignItems: 'center' }}>
+              <Image
+                source={dnbImage}
+                accessibilityLabel="Dun & Bradstreet business profile"
+                style={{ 
+                  width: 250, 
+                  height: 120, 
+                  resizeMode: 'contain'
+                }}
+              />
+            </a>
         </div>
         </section>
 

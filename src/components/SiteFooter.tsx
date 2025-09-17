@@ -14,9 +14,10 @@ export default function SiteFooter() {
         <div style={{ maxWidth: '1200px', margin: '0 auto', display: 'grid', gridTemplateColumns: '1.2fr 1fr 1fr 1fr', gap: '24px', alignItems: 'start' }}>
           {/* Company */}
           <div>
-            <div style={{ color: '#e4e4e7', fontSize: 14, fontWeight: 700, marginBottom: 10 }}>CartoonMovie</div>
+            <div style={{ color: '#e4e4e7', fontSize: 14, fontWeight: 700, marginBottom: 10 }}>Cartoon Movie</div>
             <div style={{ color: '#71717a', fontSize: 13, lineHeight: '20px' }}>
-              © 2025 Perpetual Pictures Private Ltd. All rights reserved.
+              © 2025 Perpetual Pictures Private Ltd. <br />
+              All rights reserved.
             </div>
             <div style={{ marginTop: 10 }}>
               <a href="mailto:contact@cartoon.movie" style={{ color: '#9ca3af', fontSize: 13, textDecoration: 'none' }}>
@@ -40,7 +41,7 @@ export default function SiteFooter() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               <a href="https://x.com/cartoonmovieai" target="_blank" rel="noreferrer" style={{ color: '#9ca3af', fontSize: 13, textDecoration: 'none' }}>X (Twitter)</a>
               <a href="https://www.instagram.com/cartoon.movie" target="_blank" rel="noreferrer" style={{ color: '#9ca3af', fontSize: 13, textDecoration: 'none' }}>Instagram</a>
-              <a href="https://www.linkedin.com/company/cartoonmovie/posts/?feedView=all" target="_blank" rel="noreferrer" style={{ color: '#9ca3af', fontSize: 13, textDecoration: 'none' }}>LinkedIn</a>
+              <a href="https://www.linkedin.com/company/cartoonmovie/" target="_blank" rel="noreferrer" style={{ color: '#9ca3af', fontSize: 13, textDecoration: 'none' }}>LinkedIn</a>
             </div>
           </div>
 
@@ -49,10 +50,10 @@ export default function SiteFooter() {
             <div style={{ color: '#e4e4e7', fontSize: 14, fontWeight: 700, marginBottom: 10 }}>Get the app</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               <a href="https://apps.apple.com/in/app/cartoon-movie/id6740822349" target="_blank" rel="noreferrer" style={{ display: 'inline-block' }}>
-                <img src="https://developer.apple.com/assets/elements/badges/download-on-the-app-store.svg" alt="Download on the App Store" style={{ height: 40 }} />
+                <img src="https://developer.apple.com/assets/elements/badges/download-on-the-app-store.svg" alt="Download on the App Store" style={{ width: 160, height: 48, objectFit: 'contain' }} />
               </a>
               <a href="https://play.google.com/store/apps/details?id=branded.mbdf5e8107dbf472ebfb530d38b681106.cartoonmovie&pcampaignid=web_share&pli=1" target="_blank" rel="noreferrer" style={{ display: 'inline-block' }}>
-                <img src="https://upload.wikimedia.org/wikipedia/commons/7/78/Google_Play_Store_badge_EN.svg" alt="Get it on Google Play" style={{ height: 40 }} />
+                <img src="https://upload.wikimedia.org/wikipedia/commons/7/78/Google_Play_Store_badge_EN.svg" alt="Get it on Google Play" style={{ width: 160, height: 48, objectFit: 'contain' }} />
               </a>
             </div>
           </div>

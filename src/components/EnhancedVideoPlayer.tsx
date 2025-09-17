@@ -255,6 +255,29 @@ const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
     resetControlsTimer()
   }
 
+  // Lock scroll only while in fullscreen (web). Allow normal page scroll otherwise.
+  useEffect(() => {
+    if (Platform.OS !== 'web') return
+    const onFsChange = () => {
+      try {
+        const fsActive = !!document.fullscreenElement
+        let styleEl = document.querySelector('style[data-evp-scroll-lock="1"]') as HTMLStyleElement | null
+        if (fsActive) {
+          if (!styleEl) {
+            styleEl = document.createElement('style')
+            styleEl.setAttribute('data-evp-scroll-lock', '1')
+            document.head.appendChild(styleEl)
+          }
+          styleEl.textContent = `html, body, #root { overflow: hidden !important; height: 100% !important; }`
+        } else if (styleEl) {
+          try { document.head.removeChild(styleEl) } catch {}
+        }
+      } catch {}
+    }
+    document.addEventListener('fullscreenchange', onFsChange)
+    return () => { document.removeEventListener('fullscreenchange', onFsChange) }
+  }, [])
+
   const toggleFullscreen = async () => {
     if (Platform.OS === 'web') {
       try {
@@ -743,16 +766,18 @@ const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
       <div
         ref={containerRef}
         data-evp-root
-        style={{ width: '100%', height: '100%', position: 'relative', backgroundColor: '#000', display: 'flex', flexDirection: 'column' }}
+        style={{ width: '100%', height: '100%', minHeight: '100vh', maxHeight: '100vh', position: 'relative', backgroundColor: '#000', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}
         onMouseMove={() => resetControlsTimer()}
         onClick={() => { setShowControls(true); resetControlsTimer() }}
         onTouchStart={() => resetControlsTimer()}
       >
         <style>{`
           /* Ensure fullscreen element truly fills the screen and removes any gaps */
-          div[data-evp-root]:fullscreen { width: 100vw !important; height: 100vh !important; margin: 0 !important; padding: 0 !important; display: flex; }
-          div[data-evp-root]:-webkit-full-screen { width: 100vw !important; height: 100vh !important; margin: 0 !important; padding: 0 !important; display: flex; }
+          div[data-evp-root]:fullscreen { width: 100vw !important; height: 100vh !important; margin: 0 !important; padding: 0 !important; display: flex; overflow: hidden !important; }
+          div[data-evp-root]:-webkit-full-screen { width: 100vw !important; height: 100vh !important; margin: 0 !important; padding: 0 !important; display: flex; overflow: hidden !important; }
           div[data-evp-root]:fullscreen video, div[data-evp-root]:-webkit-full-screen video { width: 100vw !important; height: 100vh !important; object-fit: cover !important; }
+          /* Hide scrollbars for player container */
+          div[data-evp-root] { overflow: hidden !important; }
         `}</style>
         <View style={styles.container}>
           {/* Video Player */}
@@ -788,9 +813,9 @@ const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
           {/* Controls */}
           {!error && renderControls()}
 
-          {/* Watermark */}
+          {/* Watermark - top-right edge */}
           {!error && (
-            <View style={{ position: 'absolute', top: 12, right: 12, opacity: 0.6, zIndex: 50, pointerEvents: 'none', backgroundColor: 'transparent' }}>
+            <View style={{ position: 'absolute', top: 30, right: 0, opacity: 0.6, zIndex: 50, pointerEvents: 'none', backgroundColor: 'transparent' }}>
               <Image source={logoWatermark} style={{ width: 120, height: 48 }} resizeMode={'contain'} />
             </View>
           )}
@@ -841,13 +866,13 @@ const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
       {/* Controls */}
       {!error && renderControls()}
 
-      {/* Watermark - shows over the video while playing */}
+      {/* Watermark - top-right edge */}
       {!error && (
         <View
           style={{
             position: 'absolute',
-            top: 12,
-            right: 12,
+            top: 24,
+            right: 24,
             opacity: 0.6,
             zIndex: 50,
             pointerEvents: 'none',

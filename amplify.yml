@@ -1,0 +1,19 @@
+version: 1
+frontend:
+  phases:
+    preBuild:
+      commands:
+        - corepack enable
+        - npm ci
+        - npx expo --version
+    build:
+      commands:
+        # Build static web site with Expo Web export
+        - npx expo export -p web --output-dir dist
+  artifacts:
+    baseDirectory: dist
+    files:
+      - '**/*'
+  cache:
+    paths:
+      - node_modules/**/*

@@ -35,6 +35,7 @@ export default function Navigation({ currentPage = 'home', onNavigate }: Navigat
     const [open, setOpen] = useState(false);
     const [hoverIndex, setHoverIndex] = useState<number>(-1);
     const containerRef = useRef<HTMLDivElement>(null);
+    const userMenuRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLInputElement>(null);
 
     // Fetch suggestions from backend on each query change (debounced via open state)
@@ -55,17 +56,41 @@ export default function Navigation({ currentPage = 'home', onNavigate }: Navigat
       return () => { isMounted = false };
     }, [open, query]);
 
-    // Close on outside click
+    // Close on outside click for both search and user menu, and on scroll/escape
     useEffect(() => {
-      const onDocClick = (e: MouseEvent) => {
-        if (!containerRef.current) return;
-        if (!containerRef.current.contains(e.target as Node)) {
+      const onPointer = (e: Event) => {
+        const target = e.target as Node | null;
+        if (containerRef.current && !containerRef.current.contains(target as Node)) {
           setOpen(false);
           setHoverIndex(-1);
         }
+        if (userMenuRef.current && !userMenuRef.current.contains(target as Node)) {
+          setShowUserMenu(false);
+        }
       };
-      document.addEventListener('mousedown', onDocClick);
-      return () => document.removeEventListener('mousedown', onDocClick);
+      const onKey = (e: KeyboardEvent) => {
+        if (e.key === 'Escape') {
+          setOpen(false);
+          setShowUserMenu(false);
+          setHoverIndex(-1);
+        }
+      };
+      const onScroll = () => {
+        setOpen(false);
+        setShowUserMenu(false);
+      };
+      document.addEventListener('mousedown', onPointer, true);
+      document.addEventListener('touchstart', onPointer, true);
+      document.addEventListener('click', onPointer, true);
+      document.addEventListener('keydown', onKey);
+      window.addEventListener('scroll', onScroll, { passive: true });
+      return () => {
+        document.removeEventListener('mousedown', onPointer, true);
+        document.removeEventListener('touchstart', onPointer, true);
+        document.removeEventListener('click', onPointer, true);
+        document.removeEventListener('keydown', onKey);
+        window.removeEventListener('scroll', onScroll);
+      };
     }, []);
 
     // Debounced open logic
@@ -84,9 +109,9 @@ export default function Navigation({ currentPage = 'home', onNavigate }: Navigat
 
     const submitSearch = (e?: React.FormEvent) => {
       if (e) e.preventDefault();
-      if (suggestions.length > 0) {
-        window.location.href = `/watch/${suggestions[0].contentId}`;
-      }
+      const q = query.trim();
+      if (!q) return;
+      window.location.href = `/search?q=${encodeURIComponent(q)}`;
     };
 
     const handleKeyDown: React.KeyboardEventHandler<HTMLInputElement> = (e) => {
@@ -99,10 +124,7 @@ export default function Navigation({ currentPage = 'home', onNavigate }: Navigat
         setHoverIndex((prev) => (prev - 1 + suggestions.length) % suggestions.length);
       } else if (e.key === 'Enter') {
         e.preventDefault();
-        const idx = hoverIndex >= 0 ? hoverIndex : 0;
-        if (suggestions[idx]) {
-          window.location.href = `/watch/${suggestions[idx].contentId}`;
-        }
+        submitSearch();
       } else if (e.key === 'Escape') {
         setOpen(false);
         setHoverIndex(-1);
@@ -237,7 +259,7 @@ export default function Navigation({ currentPage = 'home', onNavigate }: Navigat
         </form>
 
         {/* User Menu */}
-        <div style={{ position: 'relative' }}>
+        <div ref={userMenuRef} style={{ position: 'relative' }}>
           <div
             style={{
               display: 'flex',

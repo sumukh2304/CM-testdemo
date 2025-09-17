@@ -30,7 +30,7 @@ export const config = {
   
   // App configuration
   app: {
-    name: 'CartoonMovie',
+    name: 'Cartoon Movie',
     version: '1.0.0',
     supportEmail: 'support@cartoonmovie.com',
   },

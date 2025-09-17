@@ -14,7 +14,7 @@ export default function App() {
     // Ensure correct title on web
     if (Platform.OS === 'web') {
       try {
-        document.title = 'CartoonMovie'
+        document.title = 'Cartoon Movie'
       } catch {}
     }
   }, [])

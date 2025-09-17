@@ -591,13 +591,13 @@ const UnifiedVideoPlayer: React.FC<UnifiedVideoPlayerProps> = ({
         </Animated.View>
       )}
 
-      {/* Watermark */}
+      {/* Watermark - top-right edge */}
       {!error && (
         <View
           style={{
             position: 'absolute',
-            top: 12,
-            right: 12,
+            top: 30,
+            right: 15,
             opacity: 0.6,
             zIndex: 50,
             pointerEvents: 'none',

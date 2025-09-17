@@ -93,6 +93,9 @@ export default function Home({ navigation }: HomeProps) {
             Watch anywhere. Anytime. Join millions of viewers enjoying
             Cartoon Movie.
           </Animated.Text>
+          <Animated.Text style={[styles.heroNote, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}> 
+            Content not for Monetization
+          </Animated.Text>
 
           <Animated.View style={[styles.heroButtons, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}> 
             <TouchableOpacity
@@ -190,6 +193,14 @@ const styles = StyleSheet.create({
     lineHeight: 32,
     maxWidth: 700,
     fontWeight: "400",
+  },
+  heroNote: {
+    fontSize: 14,
+    color: "#cfcfcf",
+    textAlign: "center",
+    marginTop: -36,
+    marginBottom: 40,
+    opacity: 0.9,
   },
   heroButtons: {
     flexDirection: "row",

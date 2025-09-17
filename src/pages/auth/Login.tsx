@@ -10,6 +10,7 @@ export default function Login() {
   const { login } = useAuth()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
   const [toast, setToast] = useState<{ message: string; type?: 'success' | 'error' | 'info' } | null>(null)
   const [loading, setLoading] = useState(false)
 
@@ -60,16 +61,45 @@ export default function Login() {
             />
           </div>
           
-          <div className="auth-input-group">
+          <div className="auth-input-group" style={{ position: 'relative' }}>
             <input 
               className="auth-input" 
               placeholder="Password" 
-              type="password" 
+              type={showPassword ? 'text' : 'password'} 
               value={password} 
               onChange={(e) => setPassword(e.target.value)}
               required
               disabled={loading}
+              style={{ paddingRight: 44 }}
             />
+            <button
+              type="button"
+              aria-label={showPassword ? 'Hide password' : 'Show password'}
+              onClick={() => setShowPassword(v => !v)}
+              style={{
+                position: 'absolute',
+                right: 10,
+                top: '50%',
+                transform: 'translateY(-50%)',
+                background: 'transparent',
+                border: 'none',
+                padding: 6,
+                cursor: 'pointer',
+                color: '#cfcfcf'
+              }}
+            >
+              {showPassword ? (
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M17.94 17.94A10.94 10.94 0 0 1 12 20c-5 0-9.27-3.11-11-8 1.022-2.86 3.09-5.2 5.74-6.6M9.9 4.24A10.94 10.94 0 0 1 12 4c5 0 9.27 3.11 11 8-.51 1.43-1.3 2.73-2.3 3.82M1 1l22 22" />
+                  <path d="M14.12 14.12a3 3 0 1 1-4.24-4.24" />
+                </svg>
+              ) : (
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                  <circle cx="12" cy="12" r="3" />
+                </svg>
+              )}
+            </button>
           </div>
           
           <button 

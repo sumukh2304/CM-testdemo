@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { api, getGenres, createGenre, getLanguages, createLanguage, createContent, createStreaming, getCreatorAnalytics, getPresignedUpload } from '../../lib/api'
+import { api, getGenres, createGenre, getLanguages, createLanguage, createContent, createStreaming, getCreatorAnalytics, getPresignedUpload, getCreatorApproval } from '../../lib/api'
 import { useAuth } from '../../hooks/useAuth'
 import SiteFooter from '../../components/SiteFooter'
 import SiteHeader from '../../components/SiteHeader'
@@ -55,9 +55,27 @@ export default function Creator() {
       return
     }
     
-    loadMyContent()
-    loadMetadata()
-    loadAnalytics()
+    // Ensure creator is approved before allowing access
+    (async () => {
+      try {
+        const approval = await getCreatorApproval(user.userId)
+        if ((approval?.approved || '').toString().toLowerCase() !== 'yes') {
+          setToast({ message: 'Your creator account is not approved yet.', type: 'error' })
+          navigate('/home')
+          return
+        }
+      } catch (e) {
+        console.warn('Failed to fetch creator approval, denying access by default', e)
+        setToast({ message: 'Unable to verify creator approval. Please try again later.', type: 'error' })
+        navigate('/home')
+        return
+      }
+
+      // Only load data after approval check passes
+      loadMyContent()
+      loadMetadata()
+      loadAnalytics()
+    })()
   }, [navigate, user, authLoading])
 
   const loadMetadata = async () => {

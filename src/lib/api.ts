@@ -11,6 +11,7 @@ export type BackendUser = {
   email: string
   role: 'viewer' | 'creator' | 'admin'
   country?: string
+  approved?: 'Yes' | 'No' | string
 }
 
 export const createBackendUser = (payload: {
@@ -58,4 +59,8 @@ export const loginByEmail = (email: string) =>
     if (!found) throw new Error('User not found')
     return found
   })
+
+// Creator approval status
+export const getCreatorApproval = (userId: string): Promise<{ userId: string; approved: 'Yes' | 'No' | string }> =>
+  api.get(`/creators/${userId}/approval`).then(r => r.data)
 

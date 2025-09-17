@@ -1,4 +1,4 @@
-
+Cartoon Movie
 A modern streaming platform for cartoons and movies built with React Native and React for web.
 
 
@@ -176,4 +176,5 @@ This project is licensed under the MIT License.
 ---
 
 **CartoonMovie** - Bringing the magic of cartoons and movies to your screens with a modern experience.
+
 

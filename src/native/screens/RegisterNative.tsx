@@ -2,12 +2,11 @@ import React, { useEffect, useState } from 'react'
 import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, StyleSheet } from 'react-native'
 import Logo from '../../components/Logo'
 import type { NativeStackScreenProps } from '@react-navigation/native-stack'
-import { authAPI } from '../../services/api'
 import { useAuth } from '../../hooks/useAuth'
 import ToastNative from '../ui/ToastNative'
 
 export default function RegisterNative({ navigation }: NativeStackScreenProps<any>) {
-  const { login } = useAuth()
+  const { register, login } = useAuth()
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -27,9 +26,8 @@ export default function RegisterNative({ navigation }: NativeStackScreenProps<an
   const onSubmit = async () => {
     try {
       setLoading(true)
-      await authAPI.register({ name, email, password, role, country })
-      // Optional: auto-login after register
-      await login(email, password)
+      // Use unified auth flow: Cognito sign-up + backend user creation
+      await register({ name, email, password, role, country })
       navigation.reset({ index: 0, routes: [{ name: 'Dashboard' }] })
     } catch (e: any) {
       setToast({ message: e?.message || 'Registration failed', type: 'error' })

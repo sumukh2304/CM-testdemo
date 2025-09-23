@@ -27,10 +27,25 @@ export default function StreamingHero({
                       streamingUrls?.[0]?.resolutions?.['480p'] ||
                       Object.values(streamingUrls?.[0]?.resolutions || {})[0];
 
+  // Add responsive flags
+  const [isSmall, setIsSmall] = useState<boolean>(typeof window !== 'undefined' ? window.innerWidth <= 480 : false);
+  const [isMedium, setIsMedium] = useState<boolean>(typeof window !== 'undefined' ? (window.innerWidth > 480 && window.innerWidth <= 768) : false);
+
   useEffect(() => {
     // Disable autoplay preview to avoid CORS-triggered media requests on web
     return () => {};
   }, [bestStreamUrl, isPlaying]);
+
+  // Update responsive flags on resize
+  useEffect(() => {
+    const onResize = () => {
+      const w = window.innerWidth;
+      setIsSmall(w <= 480);
+      setIsMedium(w > 480 && w <= 768);
+    };
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
 
   const handlePlay = () => {
     if (onPlay) {
@@ -49,10 +64,10 @@ export default function StreamingHero({
       style={{
         position: 'relative',
         width: '100%',
-        height: '80vh',
-        minHeight: 600,
+        height: isSmall ? '56vh' : isMedium ? '68vh' : '80vh',
+        minHeight: isSmall ? 380 : isMedium ? 500 : 600,
         overflow: 'hidden',
-        marginBottom: 40
+        marginBottom: isSmall ? 20 : 40
       }}
     >
       {/* Background Video/Image */}
@@ -94,74 +109,78 @@ export default function StreamingHero({
       />
 
       {/* Left/Right navigation arrows */}
-      <button
-        aria-label="Previous"
-        onClick={onPrev}
-        style={{
-          position: 'absolute',
-          left: 8,
-          top: '50%',
-          transform: 'translateY(-50%)',
-          width: 36,
-          height: 54,
-          borderRadius: 4,
-          backgroundColor: 'rgba(0,0,0,0.5)',
-          border: '1px solid rgba(255,255,255,0.3)',
-          color: 'white',
-          cursor: 'pointer',
-          zIndex: 4,
-          fontSize: 16,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center'
-        }}
-      >
-        &#9664;
-      </button>
+      {!isSmall && (
+        <button
+          aria-label="Previous"
+          onClick={onPrev}
+          style={{
+            position: 'absolute',
+            left: 8,
+            top: '50%',
+            transform: 'translateY(-50%)',
+            width: 36,
+            height: 54,
+            borderRadius: 4,
+            backgroundColor: 'rgba(0,0,0,0.5)',
+            border: '1px solid rgba(255,255,255,0.3)',
+            color: 'white',
+            cursor: 'pointer',
+            zIndex: 4,
+            fontSize: 16,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}
+        >
+          &#9664;
+        </button>
+      )}
 
-      <button
-        aria-label="Next"
-        onClick={onNext}
-        style={{
-          position: 'absolute',
-          right: 8,
-          top: '50%',
-          transform: 'translateY(-50%)',
-          width: 36,
-          height: 54,
-          borderRadius: 4,
-          backgroundColor: 'rgba(0,0,0,0.5)',
-          border: '1px solid rgba(255,255,255,0.3)',
-          color: 'white',
-          cursor: 'pointer',
-          zIndex: 4,
-          fontSize: 16,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center'
-        }}
-      >
-        &#9654;
-      </button>
+      {!isSmall && (
+        <button
+          aria-label="Next"
+          onClick={onNext}
+          style={{
+            position: 'absolute',
+            right: 8,
+            top: '50%',
+            transform: 'translateY(-50%)',
+            width: 36,
+            height: 54,
+            borderRadius: 4,
+            backgroundColor: 'rgba(0,0,0,0.5)',
+            border: '1px solid rgba(255,255,255,0.3)',
+            color: 'white',
+            cursor: 'pointer',
+            zIndex: 4,
+            fontSize: 16,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}
+        >
+          &#9654;
+        </button>
+      )}
 
       {/* Content */}
       <div
         style={{
           position: 'absolute',
-          left: 60,
-          bottom: 120,
-          maxWidth: 600,
+          left: isSmall ? 16 : isMedium ? 32 : 60,
+          bottom: isSmall ? 60 : isMedium ? 90 : 120,
+          maxWidth: isSmall ? 320 : isMedium ? 520 : 600,
           zIndex: 2
         }}
       >
         {/* Title */}
         <h1
           style={{
-            fontSize: 64,
+            fontSize: isSmall ? 28 : isMedium ? 44 : 64,
             fontWeight: 700,
             color: 'white',
             margin: 0,
-            marginBottom: 16,
+            marginBottom: isSmall ? 10 : 16,
             textShadow: '2px 2px 4px rgba(0,0,0,0.8)',
             lineHeight: 1.1
           }}
@@ -173,10 +192,10 @@ export default function StreamingHero({
         <div
           style={{
             display: 'flex',
-            alignItems: 'center',
-            gap: 16,
-            marginBottom: 20,
-            fontSize: 16,
+            alignItems: isSmall ? 'flex-start' : 'center',
+            gap: isSmall ? 10 : 16,
+            marginBottom: isSmall ? 12 : 20,
+            fontSize: isSmall ? 12 : 16,
             color: '#e5e5e5'
           }}
         >
@@ -208,12 +227,12 @@ export default function StreamingHero({
         {featuredContent.description && (
           <p
             style={{
-              fontSize: 18,
+              fontSize: isSmall ? 13 : 18,
               color: '#e5e5e5',
               lineHeight: 1.4,
               margin: 0,
-              marginBottom: 28,
-              maxWidth: 520,
+              marginBottom: isSmall ? 16 : 28,
+              maxWidth: isSmall ? 320 : 520,
               textShadow: '1px 1px 2px rgba(0,0,0,0.8)'
             }}
           >
@@ -222,7 +241,7 @@ export default function StreamingHero({
         )}
 
         {/* Action Buttons (Play and More Info) */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: isSmall ? 8 : 14 }}>
           {/* Play Button */}
           <button
             onClick={handlePlay}
@@ -230,12 +249,12 @@ export default function StreamingHero({
               display: 'flex',
               alignItems: 'center',
               gap: 12,
-              padding: '14px 32px',
+              padding: isSmall ? '10px 18px' : '14px 32px',
               backgroundColor: '#CC5500',
               color: 'black',
               border: '1px solid rgba(0,0,0,0.1)',
               borderRadius: 10,
-              fontSize: 18,
+              fontSize: isSmall ? 14 : 18,
               fontWeight: 800,
               cursor: 'pointer',
               boxShadow: '0 10px 30px rgba(0,0,0,0.35)',
@@ -269,12 +288,12 @@ export default function StreamingHero({
               display: 'flex',
               alignItems: 'center',
               gap: 12,
-              padding: '14px 28px',
+              padding: isSmall ? '10px 16px' : '14px 28px',
               backgroundColor: 'rgba(20,20,20,0.65)',
               color: 'white',
               border: '1px solid rgba(255,255,255,0.45)',
               borderRadius: 10,
-              fontSize: 18,
+              fontSize: isSmall ? 14 : 18,
               fontWeight: 700,
               cursor: 'pointer',
               boxShadow: '0 10px 30px rgba(0,0,0,0.35)',

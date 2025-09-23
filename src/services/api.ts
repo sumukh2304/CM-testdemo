@@ -151,8 +151,10 @@ export const authAPI = {
     country?: string;
   }): Promise<User> => {
     const response = await api.post('/users', {
-      ...userData,
-      role: userData.role || 'user'
+      name: userData.name,
+      email: userData.email,
+      role: (userData.role || 'viewer'),
+      country: userData.country,
     });
     return response.data;
   },

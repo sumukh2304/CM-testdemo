@@ -32,20 +32,15 @@ export default function Register() {
       sessionStorage.setItem('verifyEmail', email)
       setToast({ message: 'Verification email sent. Redirecting...', type: 'success' })
 
-      // Create backend user (fire-and-forget)
-      createBackendUser({ 
+      // Create backend user
+      await createBackendUser({ 
         userId: userSub || undefined, 
         name, 
         email, 
         role, 
         country 
       })
-        .then((res) => {
-          console.log('[Register] Backend user created:', res)
-        })
-        .catch((err) => {
-          console.warn('[Register] Backend user creation failed (continuing anyway):', err)
-        })
+      console.log('[Register] Backend user created successfully')
 
       // Redirect to verify
       setTimeout(() => navigate('/verify'), 1000)

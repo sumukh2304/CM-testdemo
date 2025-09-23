@@ -191,3 +191,25 @@ export const resendConfirmation = (email: string) =>
     })
   })
 
+export const getCurrentUser = () =>
+  new Promise<any>((resolve, reject) => {
+    const pool = getUserPool()
+    const current = pool.getCurrentUser()
+    if (!current) return resolve(null)
+    
+    current.getSession((err: any, session: any) => {
+      if (err || !session) return resolve(null)
+      
+      current.getUserAttributes((err: any, attributes: any) => {
+        if (err) return reject(err)
+        
+        const userInfo: any = { sub: current.getUsername() }
+        attributes?.forEach((attr: any) => {
+          userInfo[attr.getName()] = attr.getValue()
+        })
+        
+        resolve(userInfo)
+      })
+    })
+  })
+

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, createContext, useContext, ReactNode } from 'react';
 import { BACKEND_URL } from '../config';
 import { authAPI, User } from '../services/api';
+import { createBackendUser } from '../lib/api';
 import { sessionManager } from '../utils/sessionManager';
 
 interface AuthContextType {
@@ -160,11 +161,24 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     country?: string;
   }) => {
     try {
-      const newUser = await authAPI.register(userData);
-      
-      // Auto-login after registration with session management
-      sessionManager.setSession(newUser, newUser.userId);
-      setUser(newUser);
+      // 1) Sign up in Cognito to create the identity
+      const { signUp } = require('../lib/cognito');
+      const roleToUse = (userData.role || 'viewer') as 'viewer' | 'creator' | 'admin';
+      const signupRes = await signUp(userData.email, userData.password, roleToUse, userData.name);
+      const userSub: string = signupRes?.userSub || signupRes?.UserSub || '';
+
+      // 2) Create user in backend using Cognito sub as userId
+      const created = await createBackendUser({
+        userId: userSub || undefined,
+        name: userData.name,
+        email: userData.email,
+        role: roleToUse,
+        country: userData.country,
+      });
+
+      // 3) Store session
+      sessionManager.setSession(created, created.userId);
+      setUser(created);
     } catch (error) {
       throw error;
     }

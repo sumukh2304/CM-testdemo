@@ -11,7 +11,14 @@ export default function SiteFooter() {
         padding: '28px 24px',
         marginTop: '40px'
       }}>
-        <div style={{ maxWidth: '1200px', margin: '0 auto', display: 'grid', gridTemplateColumns: '1.2fr 1fr 1fr 1fr', gap: '24px', alignItems: 'start' }}>
+        <div style={{
+          maxWidth: '1200px',
+          margin: '0 auto',
+          display: 'grid',
+          gridTemplateColumns: '1.2fr 1fr 1fr 1fr',
+          gap: '24px',
+          alignItems: 'start'
+        }}>
           {/* Company */}
           <div>
             <div style={{ color: '#e4e4e7', fontSize: 14, fontWeight: 700, marginBottom: 10 }}>Cartoon Movie</div>
@@ -58,6 +65,14 @@ export default function SiteFooter() {
             </div>
           </div>
         </div>
+        <style>{`
+          @media (max-width: 768px) {
+            footer > div {
+              grid-template-columns: 1fr !important;
+              gap: 18px !important;
+            }
+          }
+        `}</style>
       </footer>
     )
   }

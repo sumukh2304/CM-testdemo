@@ -71,15 +71,21 @@ export default function ContentRow({
   }
 
   if (Platform.OS === 'web') {
+    const [isSmall, setIsSmall] = useState<boolean>(typeof window !== 'undefined' ? window.innerWidth <= 480 : false)
+    useEffect(() => {
+      const onResize = () => setIsSmall(window.innerWidth <= 480)
+      window.addEventListener('resize', onResize)
+      return () => window.removeEventListener('resize', onResize)
+    }, [])
     // Ensure scroll buttons state updates when items change
     useEffect(() => {
       setTimeout(checkScrollButtons, 0)
     }, [items])
 
     return (
-      <div style={{ marginBottom: 32 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, paddingInline: 16, marginBottom: 12 }}>
-          <h2 style={{ color: 'white', fontSize: featured ? 28 : 20, fontWeight: 700 }}>{title}</h2>
+      <div style={{ marginBottom: isSmall ? 20 : 32 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, paddingInline: isSmall ? 12 : 16, marginBottom: 12 }}>
+          <h2 style={{ color: 'white', fontSize: featured ? (isSmall ? 22 : 28) : (isSmall ? 18 : 20), fontWeight: 700 }}>{title}</h2>
           {featured && (
             <div style={{ backgroundColor: '#CC5500', color: 'white', borderRadius: 6, padding: '2px 8px', fontSize: 12 }}>Featured</div>
           )}
@@ -87,7 +93,7 @@ export default function ContentRow({
 
         <div style={{ position: 'relative' }}>
           {/* Left scroll button */}
-          {canScrollLeft && (
+          {canScrollLeft && !isSmall && (
             <button
               onClick={() => scroll('left')}
               style={{
@@ -100,7 +106,7 @@ export default function ContentRow({
           )}
 
           {/* Right scroll button */}
-          {canScrollRight && (
+          {canScrollRight && !isSmall && (
             <button
               onClick={() => scroll('right')}
               style={{
@@ -118,7 +124,7 @@ export default function ContentRow({
             onScroll={checkScrollButtons}
             className="content-scroll-container scrollbar-hide"
             style={{
-              overflowX: 'auto', display: 'flex', gap: 8, paddingInline: 16,
+              overflowX: 'auto', display: 'flex', gap: isSmall ? 6 : 8, paddingInline: isSmall ? 12 : 16,
               scrollBehavior: 'smooth',
               msOverflowStyle: 'none',
               scrollbarWidth: 'none',
@@ -129,7 +135,7 @@ export default function ContentRow({
                 <StreamingCard
                   content={item}
                   streamingUrls={streamUrls[item.contentId]}
-                  size={featured ? 'large' : 'medium'}
+                  size={featured ? (isSmall ? 'medium' : 'large') : (isSmall ? 'small' : 'medium')}
                   onPlay={onPlay}
                   onMoreInfo={onMoreInfo}
                   onAddToWatchlist={onAddToWatchlist}

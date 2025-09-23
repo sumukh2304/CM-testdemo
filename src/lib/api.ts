@@ -3,6 +3,24 @@ import { BACKEND_URL } from '../config'
 
 export const api = axios.create({
   baseURL: BACKEND_URL,
+  timeout: 10000,
+})
+
+// Add request interceptor to handle headers properly
+api.interceptors.request.use((config) => {
+  // Only set Content-Type for non-GET requests to avoid unnecessary CORS preflight
+  const method = (config.method || 'get').toLowerCase()
+  if (method !== 'get') {
+    const hdrs: any = config.headers || {}
+    // Axios v1 can provide AxiosHeaders (with set) or a plain object
+    if (typeof hdrs.set === 'function') {
+      hdrs.set('Content-Type', 'application/json')
+    } else {
+      hdrs['Content-Type'] = 'application/json'
+      config.headers = hdrs
+    }
+  }
+  return config
 })
 
 export type BackendUser = {

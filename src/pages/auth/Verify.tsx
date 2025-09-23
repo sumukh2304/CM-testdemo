@@ -29,6 +29,9 @@ export default function Verify() {
     setLoading(true)
     try {
       await confirmSignUp(email, code)
+      
+
+      
       setToast({ message: 'Email verified successfully! You can now login.', type: 'success' })
       
       // Clear stored email

@@ -29,6 +29,12 @@ export default function Navigation({ currentPage = 'home', onNavigate }: Navigat
   };
 
   if (Platform.OS === 'web') {
+    const [isSmall, setIsSmall] = useState<boolean>(typeof window !== 'undefined' ? window.innerWidth <= 480 : false);
+    useEffect(() => {
+      const onResize = () => setIsSmall(window.innerWidth <= 480);
+      window.addEventListener('resize', onResize);
+      return () => window.removeEventListener('resize', onResize);
+    }, []);
     const [query, setQuery] = useState('');
     const [allContent, setAllContent] = useState<Content[] | null>(null);
     const [loading, setLoading] = useState(false);
@@ -139,10 +145,10 @@ export default function Navigation({ currentPage = 'home', onNavigate }: Navigat
           right: 0,
           zIndex: 50,
           background: 'linear-gradient(to bottom, rgba(0,0,0,0.8) 0%, transparent 100%)',
-          padding: '10px 40px',
-          display: 'flex',
+          padding: isSmall ? '10px 16px' : '10px 40px',
+          display: isSmall ? 'grid' : 'flex',
+          ...(isSmall ? { gridTemplateColumns: 'auto 1fr auto' } : { justifyContent: 'space-between' }),
           alignItems: 'center',
-          justifyContent: 'space-between',
           transition: 'all 0.3s ease'
         }}
       >
@@ -156,25 +162,33 @@ export default function Navigation({ currentPage = 'home', onNavigate }: Navigat
           }}
           onClick={() => handleNavigation('home')}
         >
-          <Logo />
+          <Logo iconSize={isSmall ? 28 : 40} fontSize={isSmall ? 14 : 18} gap={isSmall ? 4 : 6} compact={isSmall} />
         </div>
 
         {/* Search Bar with live suggestions */}
-        <form onSubmit={submitSearch} style={{ flex: 1, maxWidth: 520, marginRight: 24 }}>
+        <form
+          onSubmit={submitSearch}
+          style={
+            isSmall
+              ? { width: '60vw', minWidth: 160, marginRight: 8, marginLeft: 8 }
+              : { flex: 1, maxWidth: 520, minWidth: 260, marginRight: 24 }
+          }
+        >
           <div ref={containerRef} style={{ position: 'relative' }}>
             <input
               ref={inputRef}
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Search movies, shows..."
+              placeholder={isSmall ? 'Search' : 'Search movies, shows...'}
               style={{
                 width: '100%',
                 background: 'rgba(255,255,255,0.08)',
                 color: 'white',
                 border: '1px solid rgba(255,255,255,0.2)',
                 borderRadius: 8,
-                padding: '10px 44px 10px 14px',
+                padding: isSmall ? '8px 36px 8px 10px' : '10px 44px 10px 14px',
+                fontSize: isSmall ? 12 : 14,
                 outline: 'none'
               }}
             />
@@ -190,11 +204,12 @@ export default function Navigation({ currentPage = 'home', onNavigate }: Navigat
                 border: 'none',
                 color: 'white',
                 borderRadius: 6,
-                padding: '8px 12px',
+                padding: isSmall ? '6px 8px' : '8px 12px',
+                fontSize: isSmall ? 12 : 14,
                 cursor: 'pointer'
               }}
             >
-              Search
+              {isSmall ? '🔍' : 'Search'}
             </button>
 
             {open && query.trim() && (

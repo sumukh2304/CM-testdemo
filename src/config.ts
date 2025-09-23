@@ -34,7 +34,7 @@ export const config: Config = {
   BACKEND_URL: (() => {
     const fromEnv = getEnvVar('VITE_BACKEND_URL') || getEnvVar('EXPO_PUBLIC_BACKEND_URL')
     if (fromEnv) return normalizeBase(fromEnv)
-    // Fallback for native or unknown envs (no trailing slash)
+    // Use Lambda Function URL instead of API Gateway
     return normalizeBase('https://w3w905927g.execute-api.us-east-1.amazonaws.com/prod')
   })(),
   

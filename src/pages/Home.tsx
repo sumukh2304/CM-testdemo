@@ -147,7 +147,7 @@ export default function Home({ navigation }: HomeProps) {
             Cartoon Movie.
           </Animated.Text>
           <Animated.Text style={[styles.heroNote, responsiveStyles.heroNote, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}> 
-            Beta Product. Content not for Monetization
+            Disclaimer: Beta Product. Content not for Monetization
           </Animated.Text>
 
           <Animated.View style={[styles.heroButtons, responsiveStyles.heroButtons, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}> 

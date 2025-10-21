@@ -1,4 +1,5 @@
 # Test branch protection working correctly
+#adding extra line
 import { registerRootComponent } from 'expo';
 
 import App from './App';

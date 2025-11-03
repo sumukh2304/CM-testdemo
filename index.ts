@@ -1,17 +1,6 @@
 # Test branch protection working correctly
 #adding extra line
 
-#e
-#x
-#t
-#r
-#a
-#c
-#o
-#d
-#e
-
-
 
 
 
